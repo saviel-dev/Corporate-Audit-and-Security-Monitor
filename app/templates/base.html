@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Corporate Cash Credit Monitor — Vigilancia diaria de registros corporativos en EE. UU." />
+  <title>{% block title %}Corporate Monitor{% endblock %}</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
+  {% block head %}{% endblock %}
+  <script>
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.add('theme-light');
+    }
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      document.documentElement.classList.add('sidebar-collapsed');
+    }
+  </script>
+</head>
+
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo" style="position: relative;">
+      <div class="logo-icon">
+        <i data-lucide="shield-check"></i>
+      </div>
+      <div class="logo-text">
+        <span class="logo-title">Corp Monitor</span>
+        <span class="logo-subtitle">Cash Credit</span>
+      </div>
+      <button id="sidebar-collapse-btn" aria-label="Colapsar sidebar" style="position: absolute; right: -12px; top: 24px; width: 24px; height: 24px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 50%; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; z-index: 110; transition: all var(--duration);" onmouseover="this.style.borderColor='var(--brand)'; this.style.color='var(--brand)';" onmouseout="this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)';">
+        <i data-lucide="menu" id="collapse-icon" style="width: 14px; height: 14px;"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('main.dashboard') }}"
+        class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}" id="nav-dashboard" data-tooltip="{{ _('Dashboard') }}">
+        <i data-lucide="layout-dashboard"></i>
+        <span>{{ _('Dashboard') }}</span>
+      </a>
+      <a href="{{ url_for('main.corporations_list') }}"
+        class="nav-item {% if request.endpoint == 'main.corporations_list' %}active{% endif %}" id="nav-corporations" data-tooltip="{{ _('Corporaciones') }}">
+        <i data-lucide="list"></i>
+        <span>{{ _('Corporaciones') }}</span>
+      </a>
+      <a href="{{ url_for('main.upload_form') }}"
+        class="nav-item {% if request.endpoint in ('main.upload_form', 'main.upload_csv') %}active{% endif %}"
+        id="nav-upload" data-tooltip="{{ _('Cargar CSV') }}">
+        <i data-lucide="upload-cloud"></i>
+        <span>{{ _('Cargar CSV') }}</span>
+      </a>
+      <a href="{{ url_for('main.runs_list') }}"
+        class="nav-item {% if request.endpoint in ('main.runs_list', 'main.run_detail') %}active{% endif %}"
+        id="nav-runs" data-tooltip="{{ _('Ejecuciones') }}">
+        <i data-lucide="history"></i>
+        <span>{{ _('Ejecuciones') }}</span>
+      </a>
+      <a href="{{ url_for('main.reports') }}"
+        class="nav-item {% if request.endpoint == 'main.reports' %}active{% endif %}"
+        id="nav-reports" data-tooltip="{{ _('Reportes') }}">
+        <i data-lucide="bar-chart-3"></i>
+        <span>{{ _('Reportes') }}</span>
+      </a>
+      <a href="{{ url_for('main.states_list') }}"
+        class="nav-item {% if request.endpoint in ('main.states_list', 'main.states_import', 'main.state_toggle') %}active{% endif %}"
+        id="nav-states" data-tooltip="{{ _('Portales') }}">
+        <i data-lucide="globe"></i>
+        <span>{{ _('Portales') }}</span>
+      </a>
+      <div class="nav-divider"></div>
+      <div class="nav-label">{{ _('Configuración') }}</div>
+      <a href="#" class="nav-item disabled" id="nav-settings" data-tooltip="{{ _('Ajustes') }}">
+        <i data-lucide="settings"></i>
+        <span>{{ _('Ajustes') }}</span>
+        <span class="nav-badge">{{ _('Próximo') }}</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div id="scan-progress-container" style="display: block; margin-bottom: 1rem; padding: 0 0.5rem;">
+        <div
+          style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; flex-wrap: wrap;">
+          <span>{{ _('Progreso escaneo automático') }}</span>
+          <span id="scan-progress-text">-- / --</span>
+        </div>
+        <div style="background: var(--surface-hover); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
+          <div id="scan-progress-bar"
+            style="background: var(--primary); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+      <form action="{{ url_for('main.manual_scan') }}" method="post" style="width:100%">
+        <button type="submit" class="btn-scan" id="btn-manual-scan" data-tooltip="{{ _('Escaneo Manual') }}">
+          <i data-lucide="play-circle"></i>
+          {{ _('Escaneo Manual') }}
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+        <i data-lucide="menu"></i>
+      </button>
+      <div class="topbar-left" style="display: flex; align-items: center; gap: 15px;">
+        <div class="topbar-title-wrapper" style="display: flex; align-items: center; gap: 8px;">
+          <span class="topbar-icon" style="display: flex; align-items: center; justify-content: center; color: var(--brand);">
+            {% block page_icon %}<i data-lucide="layout-dashboard" style="width: 20px; height: 20px;"></i>{% endblock %}
+          </span>
+          <div class="topbar-title" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">
+            {% block page_title %}Dashboard{% endblock %}
+          </div>
+        </div>
+        
+        <div class="topbar-divider" style="width: 1px; height: 28px; background: var(--border-default);"></div>
+        
+        <div class="topbar-datetime" style="display: flex; flex-direction: column; line-height: 1.2;">
+          <span id="topbar-time" style="font-size: 0.95rem; font-weight: 700; color: var(--brand); letter-spacing: 0.5px;">--:--:--</span>
+          <span id="topbar-date" style="font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px;">---, -- ---</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        {% set current_lang = request.cookies.get('lang', 'es') %}
+        {% if current_lang == 'es' %}
+          <a href="{{ url_for('main.set_language', lang='en') }}"
+             id="btn-lang-toggle"
+             aria-label="Switch to English"
+             title="Switch to English"
+             style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; transition: all var(--duration); text-decoration: none;"
+             onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
+             onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'">
+            <span style="font-size: 1.1rem; line-height:1;">🇺🇸</span>
+            <span>EN</span>
+          </a>
+        {% else %}
+          <a href="{{ url_for('main.set_language', lang='es') }}"
+             id="btn-lang-toggle"
+             aria-label="Cambiar a Español"
+             title="Cambiar a Español"
+             style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; transition: all var(--duration); text-decoration: none;"
+             onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
+             onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'">
+            <span style="font-size: 1.1rem; line-height:1;">🇪🇸</span>
+            <span>ES</span>
+          </a>
+        {% endif %}
+
+        {% if request.endpoint in ['main.dashboard', 'main.corporations_list', 'main.upload_form', 'main.runs_list', 'main.run_detail', 'main.states_list', 'main.reports'] %}
+        <button id="btn-tour" aria-label="{{ _('Iniciar Tour') }}" style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: 20px; transition: all var(--duration);" onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'" onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'" title="{{ _('Ver Tour Guía') }}">
+          <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
+          <span>{{ _('¿Cómo funciona?') }}</span>
+        </button>
+        {% endif %}
+        <button id="theme-toggle" aria-label="{{ _('Cambiar tema') }}" style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: 20px; transition: all var(--duration);" onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'" onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'" title="{{ _('Cambiar Tema') }}">
+          <i data-lucide="sun" id="theme-icon-light" style="display: none; width: 16px; height: 16px;"></i>
+          <i data-lucide="moon" id="theme-icon-dark" style="width: 16px; height: 16px;"></i>
+          <span id="theme-text" data-light-text="{{ _('Modo Oscuro') }}" data-dark-text="{{ _('Modo Claro') }}">{{ _('Modo Claro') }}</span>
+        </button>
+        <a href="{{ url_for('main.logout') }}" aria-label="{{ _('Cerrar Sesión') }}" style="background: none; border: none; cursor: pointer; color: var(--color-danger); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; padding: 6px 10px; border-radius: var(--radius-md); transition: background var(--duration);" onmouseover="this.style.background='var(--color-danger-bg)'" onmouseout="this.style.background='transparent'">
+          <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+          <span>{{ _('Salir') }}</span>
+        </a>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container" id="flash-container">
+      {% for category, message in messages %}
+      <div class="flash flash-{{ category }}" role="alert">
+        {% if category == 'success' %}<i data-lucide="check-circle-2"></i>
+        {% elif category == 'error' %}<i data-lucide="x-circle"></i>
+        {% elif category == 'warning' %}<i data-lucide="alert-triangle"></i>
+        {% else %}<i data-lucide="info"></i>{% endif %}
+        <span>{{ message }}</span>
+        <button class="flash-close" onclick="this.parentElement.remove()" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=5"></script>
+  <script>lucide.createIcons();</script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Corporate Monitor{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Estatus del Último Escaneo (Hero Banner) -->
+{% if last_run %}
+<div class="run-banner" id="last-run-banner" style="margin-bottom: 2.5rem; padding: 2.5rem 3rem; border-radius: 20px; background: linear-gradient(323deg, #567ffb, #4065d4); color: #ffffff; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 12px 32px rgba(64, 101, 212, 0.25); position: relative; overflow: hidden;">
+  <!-- Decoración de fondo suave -->
+  <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
+  
+  <div style="display: flex; flex-direction: column; gap: 1.2rem; max-width: 65%; z-index: 1;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      {% if last_run.status == 'done' %}
+        <i data-lucide="check-circle" style="width: 40px; height: 40px; color: #ffffff;"></i>
+        <h2 style="margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">{{ _('Escaneo completado') }}</h2>
+      {% elif last_run.status == 'running' %}
+        <i data-lucide="loader-2" class="spin" style="width: 40px; height: 40px; color: #ffffff;"></i>
+        <h2 style="margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">{{ _('Escaneo en progreso...') }}</h2>
+      {% else %}
+        <i data-lucide="alert-circle" style="width: 40px; height: 40px; color: #ffffff;"></i>
+        <h2 style="margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">{{ _('Escaneo fallido') }}</h2>
+      {% endif %}
+    </div>
+    
+    <p style="margin: 0; font-size: 1.15rem; opacity: 0.9; line-height: 1.6;">
+      {{ _('Iniciado el') }} <strong>{{ last_run.started_at.strftime('%d/%m/%Y') }} {{ _('a las') }} {{ last_run.started_at.strftime('%H:%M') }}</strong>.<br>
+      {{ _('Se procesaron') }} <strong>{{ last_run.total_processed }}</strong> {{ _('empresas, detectando') }} <strong>{{ last_run.total_alerts }}</strong> {{ _('con posible robo.') }}
+    </p>
+  </div>
+  
+  <div style="display: flex; flex-direction: column; gap: 0.8rem; min-width: 220px; z-index: 1;">
+    {% if last_run.report_csv_path %}
+    <a href="{{ url_for('main.download_output', filename='reports/' + last_run.report_csv_path.split('/')[-1]) }}" style="background: rgba(255,255,255,0.15); color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.25)';" onmouseout="this.style.background='rgba(255,255,255,0.15)';">
+      <i data-lucide="file-spreadsheet" style="width:18px; height:18px;"></i> {{ _('Descargar Reporte') }}
+    </a>
+    {% endif %}
+    <a href="{{ url_for('main.run_detail', run_id=last_run.id) }}" style="background: #ffffff; color: #4065d4; text-decoration: none; font-weight: 600; padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)';">
+      <i data-lucide="eye" style="width:18px; height:18px;"></i> {{ _('Ver Detalle de Ejecución') }}
+    </a>
+  </div>
+</div>
+{% else %}
+<div class="run-banner" style="margin-bottom: 2rem; padding: 2rem; border-radius: 12px; background: var(--surface-hover); border: 1px dashed var(--border);">
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <i data-lucide="info" style="width: 32px; height: 32px; color: var(--text-muted);"></i>
+    <h2 style="margin: 0; font-size: 1.25rem;">{{ _('No hay escaneos recientes') }}</h2>
+  </div>
+  <p style="margin: 0.5rem 0 0 3rem; color: var(--text-muted);">{{ _('Inicia un escaneo manual o espera a la ejecución programada.') }}</p>
+</div>
+{% endif %}
+
+<!-- Estadísticas Rápidas -->
+<section class="stats-grid" aria-label="Estadísticas generales">
+  <div class="stat-card" id="stat-total">
+    <div class="stat-icon stat-icon--blue">
+      <i data-lucide="database"></i>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ total_corps }}</div>
+      <div class="stat-label">{{ _('Total Cargadas') }}</div>
+    </div>
+  </div>
+  <div class="stat-card" id="stat-available">
+    <div class="stat-icon stat-icon--gray">
+      <i data-lucide="clock"></i>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ pending }}</div>
+      <div class="stat-label">{{ _('Pendientes de revisión') }}</div>
+    </div>
+  </div>
+  <div class="stat-card" id="stat-clean">
+    <div class="stat-icon stat-icon--green">
+      <i data-lucide="shield-check"></i>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ clean_count }}</div>
+      <div class="stat-label">{{ _('Limpias (Último Escaneo)') }}</div>
+    </div>
+  </div>
+  <div class="stat-card {% if alert_count > 0 %}stat-card--alert{% endif %}" id="stat-alerts">
+    <div class="stat-icon stat-icon--red">
+      <i data-lucide="shield-alert"></i>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ alert_count }}</div>
+      <div class="stat-label">{{ _('Posible Robo (Último)') }}</div>
+    </div>
+  </div>
+</section>
+
+<!-- Alertas Recientes -->
+{% if recent_alerts %}
+<section class="card" id="recent-alerts-section">
+  <div class="card-header">
+    <h2 class="card-title alert-title">
+      <i data-lucide="shield-alert"></i> {{ _('Alertas Recientes') }}
+    </h2>
+  </div>
+  <div class="alert-list" id="alert-list">
+    {% for result in recent_alerts %}
+    <div class="alert-item">
+      <div class="alert-item-icon"><i data-lucide="alert-triangle"></i></div>
+      <div class="alert-item-body">
+        <div class="alert-item-corp">{{ result.corporation.name }}</div>
+        <div class="alert-item-reason">{{ result.alert_reason or 'Sin descripción' }}</div>
+        <div class="alert-item-meta">
+          <span class="state-badge state-badge--{{ result.corporation.state|lower }}">{{ result.corporation.state }}</span>
+          {{ result.scanned_at.strftime('%d/%m/%Y %H:%M') }}
+        </div>
+      </div>
+      {% if result.pdf_path %}
+      <a href="{{ url_for('main.download_output', filename=result.pdf_path) }}" class="alert-item-pdf" target="_blank" title="Ver captura original">
+        <i data-lucide="file-text"></i> Evidencia PDF
+      </a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

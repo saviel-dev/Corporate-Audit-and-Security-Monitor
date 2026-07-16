@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Cargar CSV') }} — Corporate Monitor{% endblock %}
+{% block page_title %}{{ _('Cargar CSV') }}{% endblock %}
+{% block page_icon %}<i data-lucide="upload-cloud" style="width: 20px; height: 20px;"></i>{% endblock %}
+
+{% block content %}
+<div class="upload-page" id="upload-page">
+  <div class="upload-card">
+    <div class="upload-card-header">
+      <div class="upload-header-icon">
+        <i data-lucide="upload-cloud"></i>
+      </div>
+      <h1>{{ _('Importar Corporaciones') }}</h1>
+      <p>{{ _('Sube un archivo CSV con la lista diaria de corporaciones a monitorear. Los registros con estatus <strong>Vendida</strong> se importarán pero serán excluidos del escaneo.')|safe }}</p>
+    </div>
+
+    <form action="{{ url_for('main.upload_csv') }}" method="post"
+          enctype="multipart/form-data" id="upload-form" novalidate>
+
+      <div class="drop-zone" id="drop-zone" role="region" aria-label="Zona de carga de archivo">
+        <input type="file" name="file" id="file-input" accept=".csv" class="file-input" aria-label="Seleccionar archivo CSV" />
+        <div class="drop-zone-content" id="drop-zone-content">
+          <div class="drop-icon"><i data-lucide="file-spreadsheet"></i></div>
+          <div class="drop-text"><strong>{{ _('Arrastra tu CSV aquí') }}</strong> {{ _('o haz clic para seleccionar') }}</div>
+          <div class="drop-subtext">{{ _('Solo archivos .csv · Máx. 16 MB') }}</div>
+        </div>
+        <div class="drop-zone-preview" id="drop-preview" style="display:none">
+          <i data-lucide="file-check-2" class="preview-icon"></i>
+          <span id="preview-filename"></span>
+          <span id="preview-size" class="muted"></span>
+          <button type="button" class="preview-clear" id="preview-clear" aria-label="{{ _('Quitar archivo') }}">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="btn-upload-submit" disabled>
+        <i data-lucide="upload"></i>
+        {{ _('Importar CSV') }}
+      </button>
+    </form>
+
+    <div class="format-guide" id="format-guide">
+      <div class="format-guide-header">
+        <i data-lucide="info"></i>
+        {{ _('Formato esperado del CSV') }}
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table data-table--sm">
+          <thead>
+            <tr>
+              <th>{{ _('Columna') }}</th><th>{{ _('Requerido') }}</th><th>{{ _('Descripción') }}</th><th>{{ _('Ejemplo') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>name</code> / <code>corporation_name</code></td><td><span class="badge-req">{{ _('Sí') }}</span></td><td>{{ _('Nombre legal de la corporación') }}</td><td>Acme Corp LLC</td></tr>
+            <tr><td><code>state</code></td><td><span class="badge-req">{{ _('Sí') }}</span></td><td>{{ _('Código de estado (HI o CO)') }}</td><td>HI</td></tr>
+            <tr><td><code>status</code></td><td><span class="badge-opt">{{ _('Opcional') }}</span></td><td>{{ _('Disponible o Vendida') }}</td><td>Disponible</td></tr>
+            <tr><td><code>corp_id</code></td><td><span class="badge-opt">{{ _('Opcional') }}</span></td><td>{{ _('ID en el portal estatal') }}</td><td>123456789</td></tr>
+            <tr><td><code>date_registered</code></td><td><span class="badge-opt">{{ _('Opcional') }}</span></td><td>{{ _('Fecha de registro') }}</td><td>2018-03-15</td></tr>
+            <tr><td><code>priority</code></td><td><span class="badge-opt">{{ _('Opcional') }}</span></td><td>{{ _('Número entero (mayor = primero)') }}</td><td>5</td></tr>
+            <tr><td><code>required_term_1</code></td><td><span class="badge-opt">{{ _('Opcional') }}</span></td><td>{{ _('Primer criterio de detección') }}</td><td>Smith</td></tr>
+            <tr><td><code>required_term_2</code></td><td><span class="badge-opt">{{ _('Opcional') }}</span></td><td>{{ _('Segundo criterio de detección') }}</td><td>Johnson</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <a href="#" class="download-sample" id="download-sample" onclick="downloadSampleCSV(event)">
+        <i data-lucide="download"></i>
+        {{ _('Descargar CSV de ejemplo') }}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function downloadSampleCSV(e) {
+  e.preventDefault();
+  const rows = [
+    ['name','state','status','corp_id','date_registered','priority','required_term_1','required_term_2'],
+    ['Aloha Ventures LLC','HI','Disponible','HI123456','2019-06-01','3','Smith','Johnson'],
+    ['Pacific Holdings Inc','HI','Disponible','HI789012','2021-01-15','1','',''],
+    ['Rocky Mountain Corp','CO','Disponible','CO334455','2020-09-30','2','Garcia',''],
+    ['Summit Group LLC','CO','Vendida','CO667788','2017-03-10','0','',''],
+  ];
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'sample_corporations.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

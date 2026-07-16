@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Ejecución') }} #{{ run.id }} — Corporate Monitor{% endblock %}
+{% block page_title %}{{ _('Ejecución') }} #{{ run.id }}{% endblock %}
+{% block page_icon %}<i data-lucide="eye" style="width: 20px; height: 20px;"></i>{% endblock %}
+
+{% block content %}
+
+<div class="run-detail-header" id="run-detail-header">
+  <div class="run-meta-grid">
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Iniciada') }}</div>
+      <div class="run-meta-value">{{ run.started_at.strftime('%d/%m/%Y %H:%M:%S') }} UTC</div>
+    </div>
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Finalizada') }}</div>
+      <div class="run-meta-value">{{ run.finished_at.strftime('%d/%m/%Y %H:%M:%S') ~ ' UTC' if run.finished_at else '—' }}</div>
+    </div>
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Duración') }}</div>
+      <div class="run-meta-value">{% if run.duration_seconds %}{{ _('%(m)d min %(s)02d s', m=run.duration_seconds // 60, s=run.duration_seconds % 60) }}{% else %}—{% endif %}</div>
+    </div>
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Disparada por') }}</div>
+      <div class="run-meta-value">{{ run.triggered_by|capitalize }}</div>
+    </div>
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Procesadas') }}</div>
+      <div class="run-meta-value">{{ run.total_processed }}</div>
+    </div>
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Alertas') }}</div>
+      <div class="run-meta-value run-meta-value--alert">{{ run.total_alerts }}</div>
+    </div>
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Errores') }}</div>
+      <div class="run-meta-value run-meta-value--error">{{ run.total_errors }}</div>
+    </div>
+    <div class="run-meta-item">
+      <div class="run-meta-label">{{ _('Estado') }}</div>
+      <div class="run-meta-value">
+        <span class="run-status-badge run-status-badge--{{ run.status }}">{{ run.status }}</span>
+      </div>
+    </div>
+  </div>
+  {% if run.report_excel_path %}
+  <a href="{{ url_for('main.download_output', filename='reports/' + run.report_excel_path.split('/')[-1]) }}" class="btn btn-secondary" id="btn-download-excel">
+    <i data-lucide="download"></i> {{ _('Descargar Excel') }}
+  </a>
+  {% endif %}
+</div>
+
+<section class="card" id="results-section">
+  <div class="card-header">
+    <h2 class="card-title">{{ _('Resultados') }}</h2>
+    <span class="muted">{{ results|length }} {{ _('registros') }}</span>
+  </div>
+
+  {% if results %}
+  <div class="table-wrapper">
+    <table class="data-table" id="results-table">
+      <thead>
+        <tr>
+          <th>{{ _('Corporación') }}</th><th>{{ _('Estado') }}</th><th>{{ _('Oficial') }}</th><th>{{ _('Agente Registrado') }}</th>
+          <th>{{ _('Portal Status') }}</th><th>{{ _('Alerta') }}</th><th>{{ _('Cambio') }}</th><th>{{ _('Evidencia') }}</th><th>{{ _('Notas') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr class="table-row {% if r.alert %}row-alert{% elif r.error %}row-error{% endif %}">
+          <td class="corp-name"><div class="corp-name-text">{{ r.corporation.name }}</div></td>
+          <td><span class="state-badge state-badge--{{ r.corporation.state|lower }}">{{ r.corporation.state }}</span></td>
+          <td>{{ r.officer_name_raw or '—' }}</td>
+          <td>{{ r.registered_agent_raw or '—' }}</td>
+          <td>{{ r.portal_status or '—' }}</td>
+          <td>
+            {% if r.error %}<span class="status-pill status-pill--error">{{ _('Error') }}</span>
+            {% elif r.alert %}<span class="status-pill status-pill--vendida">{{ _('Alerta') }}</span>
+            {% else %}<span class="status-pill status-pill--disponible">{{ _('OK') }}</span>{% endif %}
+          </td>
+          <td>{% if r.status_changed %}<span class="change-badge">{{ _('Cambio') }}</span>{% else %}<span class="muted">{{ _('Sin cambio') }}</span>{% endif %}</td>
+          <td>
+            {% if r.pdf_path %}
+            <a href="/output/pdfs/{{ r.pdf_path }}" target="_blank" class="btn-icon"><i data-lucide="file-text"></i></a>
+            {% else %}<span class="muted">—</span>{% endif %}
+          </td>
+          <td class="muted">
+            {% if r.error_message %}<span class="error-snippet" title="{{ r.error_message }}">{{ r.error_message[:60] }}{% if r.error_message|length > 60 %}…{% endif %}</span>
+            {% else %}{{ r.notes or '—' }}{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" id="empty-results">
+    <div class="empty-icon"><i data-lucide="search-x"></i></div>
+    <h3>{{ _('Sin resultados') }}</h3>
+    <p>{{ _('Esta ejecución no tiene registros de escaneo aún.') }}</p>
+  </div>
+  {% endif %}
+</section>
+
+<div style="margin-top:1rem;">
+  <a href="{{ url_for('main.runs_list') }}" class="btn btn-secondary" id="btn-back-runs">
+    <i data-lucide="arrow-left"></i> Volver al historial
+  </a>
+</div>
+{% endblock %}

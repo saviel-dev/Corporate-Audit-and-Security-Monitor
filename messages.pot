@@ -1,0 +1,685 @@
+# Translations template for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-07-16 16:16-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/routes.py:59
+msgid "Sesión iniciada correctamente."
+msgstr ""
+
+#: app/routes.py:62
+msgid "Usuario o contraseña incorrectos."
+msgstr ""
+
+#: app/routes.py:70
+msgid "Has cerrado sesión."
+msgstr ""
+
+#: app/routes.py:178 app/routes.py:508
+msgid "No se seleccionó ningún archivo."
+msgstr ""
+
+#: app/routes.py:184
+msgid "El archivo no tiene nombre."
+msgstr ""
+
+#: app/routes.py:188
+msgid "Solo se permiten archivos CSV (.csv)."
+msgstr ""
+
+#: app/routes.py:264
+#, python-format
+msgid "Error al procesar el archivo: %(e)s"
+msgstr ""
+
+#: app/routes.py:327
+#, python-format
+msgid "Formato de fecha inválido: %(e)s"
+msgstr ""
+
+#: app/routes.py:342
+msgid "No se encontraron registros para los filtros seleccionados."
+msgstr ""
+
+#: app/routes.py:513
+msgid "Nombre de archivo vacío."
+msgstr ""
+
+#: app/routes.py:584
+#, python-format
+msgid "Error procesando archivo: %(e)s"
+msgstr ""
+
+#: app/routes.py:605
+#, python-format
+msgid "%(state)s %(status)s."
+msgstr ""
+
+#: app/templates/base.html:52 app/templates/base.html:54
+msgid "Dashboard"
+msgstr ""
+
+#: app/templates/base.html:57 app/templates/base.html:59
+#: app/templates/corporations.html:3
+msgid "Corporaciones"
+msgstr ""
+
+#: app/templates/base.html:63 app/templates/base.html:65
+#: app/templates/corporations.html:31 app/templates/upload.html:3
+#: app/templates/upload.html:4
+msgid "Cargar CSV"
+msgstr ""
+
+#: app/templates/base.html:69 app/templates/base.html:71
+#: app/templates/runs.html:3
+msgid "Ejecuciones"
+msgstr ""
+
+#: app/templates/base.html:75 app/templates/base.html:77
+#: app/templates/reports.html:3
+msgid "Reportes"
+msgstr ""
+
+#: app/templates/base.html:81 app/templates/base.html:83
+msgid "Portales"
+msgstr ""
+
+#: app/templates/base.html:86
+msgid "Configuración"
+msgstr ""
+
+#: app/templates/base.html:87 app/templates/base.html:89
+msgid "Ajustes"
+msgstr ""
+
+#: app/templates/base.html:90
+msgid "Próximo"
+msgstr ""
+
+#: app/templates/base.html:98
+msgid "Progreso escaneo automático"
+msgstr ""
+
+#: app/templates/base.html:107 app/templates/base.html:109
+msgid "Escaneo Manual"
+msgstr ""
+
+#: app/templates/base.html:141
+msgid "Cambiar a Inglés"
+msgstr ""
+
+#: app/templates/base.html:146
+msgid "Switch to Spanish"
+msgstr ""
+
+#: app/templates/base.html:153
+msgid "Iniciar Tour"
+msgstr ""
+
+#: app/templates/base.html:153
+msgid "Ver Tour Guía"
+msgstr ""
+
+#: app/templates/base.html:155
+msgid "¿Cómo funciona?"
+msgstr ""
+
+#: app/templates/base.html:158
+msgid "Cambiar tema"
+msgstr ""
+
+#: app/templates/base.html:158
+msgid "Cambiar Tema"
+msgstr ""
+
+#: app/templates/base.html:161
+msgid "Modo Oscuro"
+msgstr ""
+
+#: app/templates/base.html:161
+msgid "Modo Claro"
+msgstr ""
+
+#: app/templates/base.html:163
+msgid "Cerrar Sesión"
+msgstr ""
+
+#: app/templates/base.html:165
+msgid "Salir"
+msgstr ""
+
+#: app/templates/corporations.html:4
+msgid "Corporaciones Cargadas"
+msgstr ""
+
+#: app/templates/corporations.html:13
+msgid "Listado de Corporaciones"
+msgstr ""
+
+#: app/templates/corporations.html:19 app/templates/reports.html:23
+msgid "Todos los estados"
+msgstr ""
+
+#: app/templates/corporations.html:24
+msgid "Todos los estatus"
+msgstr ""
+
+#: app/templates/corporations.html:42 app/templates/run_detail.html:64
+msgid "Corporación"
+msgstr ""
+
+#: app/templates/corporations.html:43 app/templates/reports.html:21
+#: app/templates/run_detail.html:40 app/templates/run_detail.html:64
+#: app/templates/runs.html:22 app/templates/states.html:52
+msgid "Estado"
+msgstr ""
+
+#: app/templates/corporations.html:44
+msgid "Estatus"
+msgstr ""
+
+#: app/templates/corporations.html:45
+msgid "Prioridad"
+msgstr ""
+
+#: app/templates/corporations.html:46
+msgid "Fecha Registro"
+msgstr ""
+
+#: app/templates/corporations.html:47
+msgid "Fuente"
+msgstr ""
+
+#: app/templates/corporations.html:55
+msgid "ID:"
+msgstr ""
+
+#: app/templates/corporations.html:74 app/templates/runs.html:57
+msgid "Anterior"
+msgstr ""
+
+#: app/templates/corporations.html:77
+msgid "Página"
+msgstr ""
+
+#: app/templates/corporations.html:77
+msgid "de"
+msgstr ""
+
+#: app/templates/corporations.html:77
+msgid "total"
+msgstr ""
+
+#: app/templates/corporations.html:80 app/templates/runs.html:61
+msgid "Siguiente"
+msgstr ""
+
+#: app/templates/corporations.html:88
+msgid "Sin corporaciones cargadas"
+msgstr ""
+
+#: app/templates/corporations.html:89
+msgid ""
+"Importa un archivo CSV para comenzar el monitoreo o inicia un escaneo "
+"para descubrir entidades automáticamente."
+msgstr ""
+
+#: app/templates/corporations.html:91
+msgid "Cargar CSV ahora"
+msgstr ""
+
+#: app/templates/index.html:18
+msgid "Escaneo completado"
+msgstr ""
+
+#: app/templates/index.html:21
+msgid "Escaneo en progreso..."
+msgstr ""
+
+#: app/templates/index.html:24
+msgid "Escaneo fallido"
+msgstr ""
+
+#: app/templates/index.html:29
+msgid "Iniciado el"
+msgstr ""
+
+#: app/templates/index.html:29
+msgid "a las"
+msgstr ""
+
+#: app/templates/index.html:30
+msgid "Se procesaron"
+msgstr ""
+
+#: app/templates/index.html:30
+msgid "empresas, detectando"
+msgstr ""
+
+#: app/templates/index.html:30
+msgid "con posible robo."
+msgstr ""
+
+#: app/templates/index.html:37
+msgid "Descargar Reporte"
+msgstr ""
+
+#: app/templates/index.html:41
+msgid "Ver Detalle de Ejecución"
+msgstr ""
+
+#: app/templates/index.html:49
+msgid "No hay escaneos recientes"
+msgstr ""
+
+#: app/templates/index.html:51
+msgid "Inicia un escaneo manual o espera a la ejecución programada."
+msgstr ""
+
+#: app/templates/index.html:63
+msgid "Total Cargadas"
+msgstr ""
+
+#: app/templates/index.html:72
+msgid "Pendientes de revisión"
+msgstr ""
+
+#: app/templates/index.html:81
+msgid "Limpias (Último Escaneo)"
+msgstr ""
+
+#: app/templates/index.html:90
+msgid "Posible Robo (Último)"
+msgstr ""
+
+#: app/templates/index.html:100
+msgid "Alertas Recientes"
+msgstr ""
+
+#: app/templates/login.html:6
+msgid "Inicio de sesión"
+msgstr ""
+
+#: app/templates/login.html:7 app/templates/login.html:178
+msgid "Iniciar Sesión"
+msgstr ""
+
+#: app/templates/login.html:143
+msgid "Control de acceso al sistema"
+msgstr ""
+
+#: app/templates/login.html:165
+msgid "Usuario"
+msgstr ""
+
+#: app/templates/login.html:166
+msgid "Ingresa tu usuario"
+msgstr ""
+
+#: app/templates/login.html:169
+msgid "Contraseña"
+msgstr ""
+
+#: app/templates/reports.html:4
+msgid "Reportes y Análisis"
+msgstr ""
+
+#: app/templates/reports.html:15
+msgid "Exportar Reporte Personalizado"
+msgstr ""
+
+#: app/templates/reports.html:29
+msgid "Desde"
+msgstr ""
+
+#: app/templates/reports.html:33
+msgid "Hasta"
+msgstr ""
+
+#: app/templates/reports.html:37
+msgid "Formato"
+msgstr ""
+
+#: app/templates/reports.html:47
+msgid "Generar Reporte"
+msgstr ""
+
+#: app/templates/reports.html:62
+msgid "Frecuencia de Alertas (Últimos 7 días)"
+msgstr ""
+
+#: app/templates/run_detail.html:3 app/templates/run_detail.html:4
+msgid "Ejecución"
+msgstr ""
+
+#: app/templates/run_detail.html:12
+msgid "Iniciada"
+msgstr ""
+
+#: app/templates/run_detail.html:16
+msgid "Finalizada"
+msgstr ""
+
+#: app/templates/run_detail.html:20 app/templates/runs.html:22
+msgid "Duración"
+msgstr ""
+
+#: app/templates/run_detail.html:21 app/templates/runs.html:41
+#, python-format
+msgid "%(m)d min %(s)02d s"
+msgstr ""
+
+#: app/templates/run_detail.html:24 app/templates/runs.html:21
+msgid "Disparada por"
+msgstr ""
+
+#: app/templates/run_detail.html:28 app/templates/runs.html:21
+msgid "Procesadas"
+msgstr ""
+
+#: app/templates/run_detail.html:32 app/templates/runs.html:22
+msgid "Alertas"
+msgstr ""
+
+#: app/templates/run_detail.html:36 app/templates/runs.html:22
+msgid "Errores"
+msgstr ""
+
+#: app/templates/run_detail.html:48
+msgid "Descargar Excel"
+msgstr ""
+
+#: app/templates/run_detail.html:55
+msgid "Resultados"
+msgstr ""
+
+#: app/templates/run_detail.html:56
+msgid "registros"
+msgstr ""
+
+#: app/templates/run_detail.html:64
+msgid "Oficial"
+msgstr ""
+
+#: app/templates/run_detail.html:64
+msgid "Agente Registrado"
+msgstr ""
+
+#: app/templates/run_detail.html:65
+msgid "Portal Status"
+msgstr ""
+
+#: app/templates/run_detail.html:65 app/templates/run_detail.html:78
+msgid "Alerta"
+msgstr ""
+
+#: app/templates/run_detail.html:65 app/templates/run_detail.html:81
+msgid "Cambio"
+msgstr ""
+
+#: app/templates/run_detail.html:65
+msgid "Evidencia"
+msgstr ""
+
+#: app/templates/run_detail.html:65
+msgid "Notas"
+msgstr ""
+
+#: app/templates/run_detail.html:77
+msgid "Error"
+msgstr ""
+
+#: app/templates/run_detail.html:79
+msgid "OK"
+msgstr ""
+
+#: app/templates/run_detail.html:81
+msgid "Sin cambio"
+msgstr ""
+
+#: app/templates/run_detail.html:99
+msgid "Sin resultados"
+msgstr ""
+
+#: app/templates/run_detail.html:100
+msgid "Esta ejecución no tiene registros de escaneo aún."
+msgstr ""
+
+#: app/templates/runs.html:4
+msgid "Historial de Ejecuciones"
+msgstr ""
+
+#: app/templates/runs.html:12
+msgid "Ejecuciones Diarias"
+msgstr ""
+
+#: app/templates/runs.html:21
+msgid "Fecha / Hora"
+msgstr ""
+
+#: app/templates/runs.html:32
+msgid "Auto"
+msgstr ""
+
+#: app/templates/runs.html:34
+msgid "Manual"
+msgstr ""
+
+#: app/templates/runs.html:45
+msgid "Ver detalle"
+msgstr ""
+
+#: app/templates/runs.html:59
+#, python-format
+msgid "Página %(page)s de %(pages)s (%(total)s total)"
+msgstr ""
+
+#: app/templates/runs.html:68
+msgid "Sin ejecuciones registradas"
+msgstr ""
+
+#: app/templates/runs.html:69
+msgid "Realiza un escaneo manual o espera la ejecución automática diaria."
+msgstr ""
+
+#: app/templates/runs.html:72
+msgid "Iniciar escaneo ahora"
+msgstr ""
+
+#: app/templates/states.html:3 app/templates/states.html:4
+msgid "Portales por Estado"
+msgstr ""
+
+#: app/templates/states.html:13
+msgid "Portales de Búsqueda por Estado"
+msgstr ""
+
+#: app/templates/states.html:21 app/templates/upload.html:40
+msgid "Importar CSV"
+msgstr ""
+
+#: app/templates/states.html:33
+msgid "Scraper activo"
+msgstr ""
+
+#: app/templates/states.html:34
+msgid "Estado con scraper implementado (Fase 2)"
+msgstr ""
+
+#: app/templates/states.html:37 app/templates/states.html:82
+msgid "Pendiente"
+msgstr ""
+
+#: app/templates/states.html:38
+msgid "URL configurada, scraper aún no implementado"
+msgstr ""
+
+#: app/templates/states.html:43
+msgid "Prioridad MVP"
+msgstr ""
+
+#: app/templates/states.html:53
+msgid "Código"
+msgstr ""
+
+#: app/templates/states.html:54
+msgid "Portal URL"
+msgstr ""
+
+#: app/templates/states.html:55
+msgid "Scraper"
+msgstr ""
+
+#: app/templates/states.html:56 app/templates/states.html:80
+#: app/templates/states.html:87
+msgid "Activo"
+msgstr ""
+
+#: app/templates/states.html:89
+msgid "Inactivo"
+msgstr ""
+
+#: app/templates/states.html:95
+msgid "Desactivar"
+msgstr ""
+
+#: app/templates/states.html:95
+msgid "Activar"
+msgstr ""
+
+#: app/templates/states.html:112
+#, python-format
+msgid "%(count)s estados configurados"
+msgstr ""
+
+#: app/templates/states.html:114
+#, python-format
+msgid "%(count)s con scraper activo"
+msgstr ""
+
+#: app/templates/states.html:116
+#, python-format
+msgid "%(count)s activos"
+msgstr ""
+
+#: app/templates/states.html:122
+msgid "Sin portales configurados"
+msgstr ""
+
+#: app/templates/states.html:123
+msgid ""
+"Importa el archivo CSV con el formato <strong>Estado[TAB]URL</strong> "
+"para configurar los portales de búsqueda."
+msgstr ""
+
+#: app/templates/states.html:130
+msgid "Importar CSV de estados"
+msgstr ""
+
+#: app/templates/upload.html:14
+msgid "Importar Corporaciones"
+msgstr ""
+
+#: app/templates/upload.html:15
+msgid ""
+"Sube un archivo CSV con la lista diaria de corporaciones a monitorear. "
+"Los registros con estatus <strong>Vendida</strong> se importarán pero "
+"serán excluidos del escaneo."
+msgstr ""
+
+#: app/templates/upload.html:25
+msgid "Arrastra tu CSV aquí"
+msgstr ""
+
+#: app/templates/upload.html:25
+msgid "o haz clic para seleccionar"
+msgstr ""
+
+#: app/templates/upload.html:26
+msgid "Solo archivos .csv · Máx. 16 MB"
+msgstr ""
+
+#: app/templates/upload.html:32
+msgid "Quitar archivo"
+msgstr ""
+
+#: app/templates/upload.html:47
+msgid "Formato esperado del CSV"
+msgstr ""
+
+#: app/templates/upload.html:53
+msgid "Columna"
+msgstr ""
+
+#: app/templates/upload.html:53
+msgid "Requerido"
+msgstr ""
+
+#: app/templates/upload.html:53
+msgid "Descripción"
+msgstr ""
+
+#: app/templates/upload.html:53
+msgid "Ejemplo"
+msgstr ""
+
+#: app/templates/upload.html:57 app/templates/upload.html:58
+msgid "Sí"
+msgstr ""
+
+#: app/templates/upload.html:57
+msgid "Nombre legal de la corporación"
+msgstr ""
+
+#: app/templates/upload.html:58
+msgid "Código de estado (HI o CO)"
+msgstr ""
+
+#: app/templates/upload.html:59 app/templates/upload.html:60
+#: app/templates/upload.html:61 app/templates/upload.html:62
+#: app/templates/upload.html:63 app/templates/upload.html:64
+msgid "Opcional"
+msgstr ""
+
+#: app/templates/upload.html:59
+msgid "Disponible o Vendida"
+msgstr ""
+
+#: app/templates/upload.html:60
+msgid "ID en el portal estatal"
+msgstr ""
+
+#: app/templates/upload.html:61
+msgid "Fecha de registro"
+msgstr ""
+
+#: app/templates/upload.html:62
+msgid "Número entero (mayor = primero)"
+msgstr ""
+
+#: app/templates/upload.html:63
+msgid "Primer criterio de detección"
+msgstr ""
+
+#: app/templates/upload.html:64
+msgid "Segundo criterio de detección"
+msgstr ""
+
+#: app/templates/upload.html:70
+msgid "Descargar CSV de ejemplo"
+msgstr ""
+

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Ejecuciones') }} — Corporate Monitor{% endblock %}
+{% block page_title %}{{ _('Historial de Ejecuciones') }}{% endblock %}
+{% block page_icon %}<i data-lucide="history" style="width: 20px; height: 20px;"></i>{% endblock %}
+
+{% block content %}
+<section class="card" id="runs-section">
+  <div class="card-header">
+    <h2 class="card-title">
+      <i data-lucide="history"></i>
+      {{ _('Ejecuciones Diarias') }}
+    </h2>
+  </div>
+
+  {% if runs.items %}
+  <div class="table-wrapper">
+    <table class="data-table" id="runs-table">
+      <thead>
+        <tr>
+          <th>#</th><th>{{ _('Fecha / Hora') }}</th><th>{{ _('Disparada por') }}</th><th>{{ _('Procesadas') }}</th>
+          <th>{{ _('Alertas') }}</th><th>{{ _('Errores') }}</th><th>{{ _('Duración') }}</th><th>{{ _('Estado') }}</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in runs.items %}
+        <tr class="table-row">
+          <td class="muted">#{{ run.id }}</td>
+          <td>{{ run.started_at.strftime('%d/%m/%Y %H:%M') }} UTC</td>
+          <td>
+            {% if run.triggered_by == 'scheduler' %}
+              <span class="trigger-badge trigger-badge--auto"><i data-lucide="clock"></i> {{ _('Auto') }}</span>
+            {% else %}
+              <span class="trigger-badge trigger-badge--manual"><i data-lucide="user"></i> {{ _('Manual') }}</span>
+            {% endif %}
+          </td>
+          <td>{{ run.total_processed }}</td>
+          <td>{% if run.total_alerts > 0 %}<span class="count-alert">{{ run.total_alerts }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+          <td>{% if run.total_errors > 0 %}<span class="count-error">{{ run.total_errors }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+          <td class="muted">
+            {% if run.duration_seconds %}{{ _('%(m)d min %(s)02d s', m=run.duration_seconds // 60, s=run.duration_seconds % 60) }}{% else %}—{% endif %}
+          </td>
+          <td><span class="run-status-badge run-status-badge--{{ run.status }}">{{ run.status }}</span></td>
+          <td>
+            <a href="{{ url_for('main.run_detail', run_id=run.id) }}" class="btn-icon" aria-label="{{ _('Ver detalle') }}">
+              <i data-lucide="eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="pagination-runs">
+    {% if runs.has_prev %}
+    <a href="{{ url_for('main.runs_list', page=runs.prev_num) }}" class="page-btn"><i data-lucide="chevron-left"></i> {{ _('Anterior') }}</a>
+    {% endif %}
+    <span class="page-info">{{ _('Página %(page)s de %(pages)s (%(total)s total)', page=runs.page, pages=runs.pages, total=runs.total) }}</span>
+    {% if runs.has_next %}
+    <a href="{{ url_for('main.runs_list', page=runs.next_num) }}" class="page-btn">{{ _('Siguiente') }} <i data-lucide="chevron-right"></i></a>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="empty-state" id="empty-runs">
+    <div class="empty-icon"><i data-lucide="clock-x"></i></div>
+    <h3>{{ _('Sin ejecuciones registradas') }}</h3>
+    <p>{{ _('Realiza un escaneo manual o espera la ejecución automática diaria.') }}</p>
+    <form action="{{ url_for('main.manual_scan') }}" method="post">
+      <button type="submit" class="btn btn-primary" id="btn-start-scan">
+        <i data-lucide="play-circle"></i> {{ _('Iniciar escaneo ahora') }}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

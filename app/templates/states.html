@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Portales por Estado') }} — Corporate Monitor{% endblock %}
+{% block page_title %}{{ _('Portales por Estado') }}{% endblock %}
+{% block page_icon %}<i data-lucide="globe" style="width: 20px; height: 20px;"></i>{% endblock %}
+
+{% block content %}
+
+<section class="card" id="states-section">
+  <div class="card-header">
+    <h2 class="card-title">
+      <i data-lucide="globe"></i>
+      {{ _('Portales de Búsqueda por Estado') }}
+    </h2>
+    <div class="card-actions">
+      <!-- Import CSV button -->
+      <form action="{{ url_for('main.states_import') }}" method="post"
+            enctype="multipart/form-data" id="states-import-form">
+        <label class="btn btn-primary" for="states-file-input" id="btn-import-states" style="cursor:pointer;">
+          <i data-lucide="upload"></i>
+          {{ _('Importar CSV') }}
+          <input type="file" id="states-file-input" name="file"
+                 accept=".csv,.txt,.tsv" style="display:none"
+                 onchange="this.form.submit()" />
+        </label>
+      </form>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="states-legend" id="states-legend">
+    <div class="legend-item">
+      <span class="scraper-badge scraper-badge--supported">{{ _('Scraper activo') }}</span>
+      {{ _('Estado con scraper implementado (Fase 2)') }}
+    </div>
+    <div class="legend-item">
+      <span class="scraper-badge scraper-badge--pending">{{ _('Pendiente') }}</span>
+      {{ _('URL configurada, scraper aún no implementado') }}
+    </div>
+    <div class="legend-item">
+      <span class="state-badge state-badge--hi">HI</span>
+      <span class="state-badge state-badge--co">CO</span>
+      {{ _('Prioridad MVP') }}
+    </div>
+  </div>
+
+  {% if states %}
+  <div class="table-wrapper">
+    <table class="data-table" id="states-table">
+      <thead>
+        <tr>
+          <th>{{ _('Estado') }}</th>
+          <th>{{ _('Código') }}</th>
+          <th>{{ _('Portal URL') }}</th>
+          <th>{{ _('Scraper') }}</th>
+          <th>{{ _('Activo') }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in states %}
+        <tr class="table-row {% if not s.active %}row-sold{% endif %}">
+          <td class="corp-name-text">{{ s.state_name }}</td>
+          <td>
+            <span class="state-badge
+              {% if s.state_code == 'HI' %}state-badge--hi
+              {% elif s.state_code == 'CO' %}state-badge--co
+              {% else %}state-badge--other{% endif %}">
+              {{ s.state_code }}
+            </span>
+          </td>
+          <td class="url-cell">
+            <a href="{{ s.search_url }}" target="_blank" class="url-link" title="{{ s.search_url }}">
+              {{ s.search_url[:60] }}{% if s.search_url|length > 60 %}…{% endif %}
+              <i data-lucide="external-link"></i>
+            </a>
+          </td>
+          <td>
+            {% if s.scraper_supported %}
+              <span class="scraper-badge scraper-badge--supported">{{ _('Activo') }}</span>
+            {% else %}
+              <span class="scraper-badge scraper-badge--pending">{{ _('Pendiente') }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if s.active %}
+              <span class="status-pill status-pill--disponible">{{ _('Activo') }}</span>
+            {% else %}
+              <span class="status-pill status-pill--vendida">{{ _('Inactivo') }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <form action="{{ url_for('main.state_toggle', code=s.state_code) }}" method="post">
+              <button type="submit" class="btn-icon"
+                      title="{% if s.active %}{{ _('Desactivar') }}{% else %}{{ _('Activar') }}{% endif %}"
+                      aria-label="Toggle {{ s.state_name }}">
+                {% if s.active %}
+                  <i data-lucide="toggle-right"></i>
+                {% else %}
+                  <i data-lucide="toggle-left"></i>
+                {% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="states-summary" id="states-summary">
+    <span>{{ _('%(count)s estados configurados', count=states|length) }}</span>
+    <span class="muted">·</span>
+    <span>{{ _('%(count)s con scraper activo', count=states|selectattr('scraper_supported')|list|length) }}</span>
+    <span class="muted">·</span>
+    <span>{{ _('%(count)s activos', count=states|selectattr('active')|list|length) }}</span>
+  </div>
+
+  {% else %}
+  <div class="empty-state" id="empty-states">
+    <div class="empty-icon"><i data-lucide="map"></i></div>
+    <h3>{{ _('Sin portales configurados') }}</h3>
+    <p>{{ _('Importa el archivo CSV con el formato <strong>Estado[TAB]URL</strong> para configurar los portales de búsqueda.')|safe }}</p>
+    <div class="empty-format-hint">
+      <code>Hawaii	https://hbe.ehawaii.gov/documents/search.html</code>
+      <code>Colorado	https://www.sos.state.co.us/biz/...</code>
+    </div>
+    <label class="btn btn-primary" for="states-file-input-empty" style="cursor:pointer;">
+      <i data-lucide="upload-cloud"></i>
+      {{ _('Importar CSV de estados') }}
+      <form action="{{ url_for('main.states_import') }}" method="post" enctype="multipart/form-data">
+        <input type="file" id="states-file-input-empty" name="file"
+               accept=".csv,.txt,.tsv" style="display:none"
+               onchange="this.form.submit()" />
+      </form>
+    </label>
+  </div>
+  {% endif %}
+
+</section>
+{% endblock %}

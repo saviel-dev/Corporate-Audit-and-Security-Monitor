@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="{{ _('Inicio de sesión') }} - Corporate Monitor" />
+  <title>{{ _('Iniciar Sesión') }} — Corporate Monitor</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  
+  <script>
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.add('theme-light');
+    }
+  </script>
+
+  <style>
+    body.login-body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg-base);
+      padding: 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      /* Manual animation classes as they are outside .content block */
+      opacity: 0;
+      animation: fadeInSlideUp 0.6s var(--ease) forwards;
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeInSlideUp 0.6s var(--ease) forwards 0.1s;
+    }
+    .login-logo .logo-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 16px;
+      background: var(--brand-bg);
+      border: 1px solid var(--border-active);
+      color: var(--brand);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-logo .logo-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+    .login-logo h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .login-logo p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .login-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      opacity: 0;
+      animation: fadeInSlideUp 0.6s var(--ease) forwards 0.2s;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .form-control {
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      color: var(--text-primary);
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-family: var(--font-body);
+      transition: border-color var(--duration);
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--brand);
+    }
+    .btn-login {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      font-size: 0.95rem;
+      justify-content: center;
+    }
+    
+    /* Login flashes */
+    .login-flashes {
+      margin-bottom: 20px;
+    }
+    .login-flash {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .login-flash svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .login-flash.success { background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success); }
+    .login-flash.error { background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger); }
+    .login-flash.warning { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid var(--color-warning); }
+    .login-flash.info { background: var(--brand-bg); color: var(--brand); border: 1px solid var(--brand); }
+  </style>
+</head>
+<body class="login-body">
+  <div class="login-container">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <i data-lucide="shield-check"></i>
+      </div>
+      <h1>Corporate Monitor</h1>
+      <p>{{ _('Control de acceso al sistema') }}</p>
+    </div>
+
+    <div class="login-card">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="login-flashes">
+            {% for category, message in messages %}
+              <div class="login-flash {{ category }}">
+                {% if category == 'success' %}<i data-lucide="check-circle-2"></i>
+                {% elif category == 'error' %}<i data-lucide="alert-circle"></i>
+                {% elif category == 'warning' %}<i data-lucide="alert-triangle"></i>
+                {% else %}<i data-lucide="info"></i>{% endif %}
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('main.login') }}">
+        <div class="form-group">
+          <label class="form-label" for="username">{{ _('Usuario') }}</label>
+          <input type="text" class="form-control" id="username" name="username" placeholder="{{ _('Ingresa tu usuario') }}" required autofocus autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">{{ _('Contraseña') }}</label>
+          <div style="position: relative;">
+            <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" style="padding-right: 40px;" />
+            <button type="button" id="toggle-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+              <i data-lucide="eye" id="eye-icon" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-login">
+          {{ _('Iniciar Sesión') }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    
+    // Toggle Password Visibility
+    const togglePassword = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eye-icon');
+    
+    if (togglePassword && passwordInput) {
+      togglePassword.addEventListener('click', function () {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Update icon based on state
+        if (type === 'text') {
+          eyeIcon.setAttribute('data-lucide', 'eye-off');
+        } else {
+          eyeIcon.setAttribute('data-lucide', 'eye');
+        }
+        
+        // Re-render lucide icons
+        lucide.createIcons();
+      });
+    }
+  </script>
+</body>
+</html>

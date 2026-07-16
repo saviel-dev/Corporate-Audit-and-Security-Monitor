@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Corporaciones') }} — Corporate Monitor{% endblock %}
+{% block page_title %}{{ _('Corporaciones Cargadas') }}{% endblock %}
+{% block page_icon %}<i data-lucide="list" style="width: 20px; height: 20px;"></i>{% endblock %}
+
+{% block content %}
+
+<section class="card" id="corporations-section">
+  <div class="card-header">
+    <h2 class="card-title">
+      <i data-lucide="list"></i>
+      {{ _('Listado de Corporaciones') }}
+    </h2>
+    <div class="card-actions">
+      <form method="get" action="{{ url_for('main.corporations_list') }}" class="filter-form" id="filter-form">
+        <div class="filter-group">
+          <select name="state" class="filter-select" id="filter-state" onchange="this.form.submit()">
+            <option value="">{{ _('Todos los estados') }}</option>
+            <option value="HI" {% if state_filter == 'HI' %}selected{% endif %}>Hawaii (HI)</option>
+            <option value="CO" {% if state_filter == 'CO' %}selected{% endif %}>Colorado (CO)</option>
+          </select>
+          <select name="status" class="filter-select" id="filter-status" onchange="this.form.submit()">
+            <option value="">{{ _('Todos los estatus') }}</option>
+            <option value="Disponible" {% if status_filter == 'Disponible' %}selected{% endif %}>Disponible</option>
+            <option value="Vendida" {% if status_filter == 'Vendida' %}selected{% endif %}>Vendida</option>
+          </select>
+        </div>
+        <a href="{{ url_for('main.upload_form') }}" class="btn btn-primary" id="btn-upload-nav">
+          <i data-lucide="upload"></i>
+          {{ _('Cargar CSV') }}
+        </a>
+      </form>
+    </div>
+  </div>
+
+  {% if corporations.items %}
+  <div class="table-wrapper">
+    <table class="data-table" id="corporations-table">
+      <thead>
+        <tr>
+          <th>{{ _('Corporación') }}</th>
+          <th>{{ _('Estado') }}</th>
+          <th>{{ _('Estatus') }}</th>
+          <th>{{ _('Prioridad') }}</th>
+          <th>{{ _('Fecha Registro') }}</th>
+          <th>{{ _('Fuente') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for corp in corporations.items %}
+        <tr class="table-row {% if corp.status|lower == 'vendida' %}row-sold{% endif %}">
+          <td class="corp-name">
+            <div class="corp-name-text">{{ corp.name }}</div>
+            {% if corp.corp_id %}<div class="corp-id">{{ _('ID:') }} {{ corp.corp_id }}</div>{% endif %}
+          </td>
+          <td><span class="state-badge state-badge--{{ corp.state|lower }}">{{ corp.state }}</span></td>
+          <td><span class="status-pill status-pill--{{ corp.status|lower|replace(' ', '-') }}">{{ corp.status }}</span></td>
+          <td class="priority-cell">
+            {% for i in range([corp.priority, 5]|min) %}⭐{% endfor %}
+            <span class="priority-num">{{ corp.priority }}</span>
+          </td>
+          <td class="date-cell">{{ corp.date_registered.strftime('%d/%m/%Y') if corp.date_registered else '—' }}</td>
+          <td class="source-cell muted">{{ corp.source_file or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="pagination">
+    {% if corporations.has_prev %}
+    <a href="{{ url_for('main.corporations_list', page=corporations.prev_num, state=state_filter, status=status_filter) }}" class="page-btn" id="btn-prev-page">
+      <i data-lucide="chevron-left"></i> {{ _('Anterior') }}
+    </a>
+    {% endif %}
+    <span class="page-info">{{ _('Página') }} {{ corporations.page }} {{ _('de') }} {{ corporations.pages }} ({{ corporations.total }} {{ _('total') }})</span>
+    {% if corporations.has_next %}
+    <a href="{{ url_for('main.corporations_list', page=corporations.next_num, state=state_filter, status=status_filter) }}" class="page-btn" id="btn-next-page">
+      {{ _('Siguiente') }} <i data-lucide="chevron-right"></i>
+    </a>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon"><i data-lucide="inbox"></i></div>
+    <h3>{{ _('Sin corporaciones cargadas') }}</h3>
+    <p>{{ _('Importa un archivo CSV para comenzar el monitoreo o inicia un escaneo para descubrir entidades automáticamente.') }}</p>
+    <a href="{{ url_for('main.upload_form') }}" class="btn btn-primary" id="btn-upload-empty">
+      <i data-lucide="upload-cloud"></i> {{ _('Cargar CSV ahora') }}
+    </a>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}
