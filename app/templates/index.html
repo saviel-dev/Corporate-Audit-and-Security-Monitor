@@ -43,12 +43,20 @@
   </div>
 </div>
 {% else %}
-<div class="run-banner" style="margin-bottom: 2rem; padding: 2rem; border-radius: 12px; background: var(--surface-hover); border: 1px dashed var(--border);">
-  <div style="display: flex; align-items: center; gap: 1rem;">
-    <i data-lucide="info" style="width: 32px; height: 32px; color: var(--text-muted);"></i>
-    <h2 style="margin: 0; font-size: 1.25rem;">{{ _('No hay escaneos recientes') }}</h2>
+<div class="run-banner" id="last-run-banner" style="margin-bottom: 2.5rem; padding: 2.5rem 3rem; border-radius: 20px; background: linear-gradient(323deg, #567ffb, #4065d4); color: #ffffff; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 12px 32px rgba(64, 101, 212, 0.25); position: relative; overflow: hidden;">
+  <!-- Decoración de fondo suave -->
+  <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
+  
+  <div style="display: flex; flex-direction: column; gap: 1.2rem; max-width: 65%; z-index: 1;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <i data-lucide="info" style="width: 40px; height: 40px; color: #ffffff;"></i>
+      <h2 style="margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">{{ _('No hay escaneos recientes') }}</h2>
+    </div>
+    <p style="margin: 0; font-size: 1.15rem; opacity: 0.9; line-height: 1.6;">
+      {{ _('Inicia un escaneo manual o espera a la ejecución programada para comenzar.') }}<br>
+      {{ _('El sistema actualmente no ha procesado ninguna entidad.') }}
+    </p>
   </div>
-  <p style="margin: 0.5rem 0 0 3rem; color: var(--text-muted);">{{ _('Inicia un escaneo manual o espera a la ejecución programada.') }}</p>
 </div>
 {% endif %}
 
@@ -93,7 +101,6 @@
 </section>
 
 <!-- Alertas Recientes -->
-{% if recent_alerts %}
 <section class="card" id="recent-alerts-section">
   <div class="card-header">
     <h2 class="card-title alert-title">
@@ -101,26 +108,33 @@
     </h2>
   </div>
   <div class="alert-list" id="alert-list">
-    {% for result in recent_alerts %}
-    <div class="alert-item">
-      <div class="alert-item-icon"><i data-lucide="alert-triangle"></i></div>
-      <div class="alert-item-body">
-        <div class="alert-item-corp">{{ result.corporation.name }}</div>
-        <div class="alert-item-reason">{{ result.alert_reason or 'Sin descripción' }}</div>
-        <div class="alert-item-meta">
-          <span class="state-badge state-badge--{{ result.corporation.state|lower }}">{{ result.corporation.state }}</span>
-          {{ result.scanned_at.strftime('%d/%m/%Y %H:%M') }}
+    {% if recent_alerts %}
+      {% for result in recent_alerts %}
+      <div class="alert-item">
+        <div class="alert-item-icon"><i data-lucide="alert-triangle"></i></div>
+        <div class="alert-item-body">
+          <div class="alert-item-corp">{{ result.corporation.name }}</div>
+          <div class="alert-item-reason">{{ result.alert_reason or 'Sin descripción' }}</div>
+          <div class="alert-item-meta">
+            <span class="state-badge state-badge--{{ result.corporation.state|lower }}">{{ result.corporation.state }}</span>
+            {{ result.scanned_at.strftime('%d/%m/%Y %H:%M') }}
+          </div>
         </div>
+        {% if result.pdf_path %}
+        <a href="{{ url_for('main.download_output', filename=result.pdf_path) }}" class="alert-item-pdf" target="_blank" title="Ver captura original">
+          <i data-lucide="file-text"></i> Evidencia PDF
+        </a>
+        {% endif %}
       </div>
-      {% if result.pdf_path %}
-      <a href="{{ url_for('main.download_output', filename=result.pdf_path) }}" class="alert-item-pdf" target="_blank" title="Ver captura original">
-        <i data-lucide="file-text"></i> Evidencia PDF
-      </a>
-      {% endif %}
-    </div>
-    {% endfor %}
+      {% endfor %}
+    {% else %}
+      <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+        <i data-lucide="shield-check" style="width: 48px; height: 48px; color: var(--color-success); margin-bottom: 1rem; opacity: 0.8;"></i>
+        <h3 style="margin-bottom: 0.5rem;">{{ _('Todo en orden') }}</h3>
+        <p>{{ _('No se han encontrado alertas recientes de robos de identidad o cambios no autorizados.') }}</p>
+      </div>
+    {% endif %}
   </div>
 </section>
-{% endif %}
 
 {% endblock %}
