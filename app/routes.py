@@ -59,10 +59,23 @@ def set_default_language(response):
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        # Handle AJAX login for the loader effect
+        if request.is_json:
+            data = request.get_json()
+            username = data.get("username", "").strip()
+            password = data.get("password", "")
+            
+            if username == "admin" and password == current_app.config.get("ADMIN_PASSWORD", "admin123"):
+                session["logged_in"] = True
+                return jsonify({"success": True})
+            else:
+                return jsonify({"success": False, "message": str(_("Usuario o contraseña incorrectos."))}), 401
+
+        # Fallback for standard form submission
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
-        if username == "admin" and password == "admin123":
+        if username == "admin" and password == current_app.config.get("ADMIN_PASSWORD", "admin123"):
             session["logged_in"] = True
             flash(_("Sesión iniciada correctamente."), "success")
             return redirect(url_for("main.dashboard"))

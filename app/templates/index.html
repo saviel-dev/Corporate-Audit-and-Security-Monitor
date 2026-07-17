@@ -16,8 +16,44 @@
       {% if last_run.status == 'done' %}
         <i data-lucide="check-circle" style="width: 40px; height: 40px; color: #ffffff;"></i>
         <h2 style="margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">{{ _('Escaneo completado') }}</h2>
+        
+        <style>
+          .banner-particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatParticle linear infinite;
+            z-index: 0;
+          }
+          @keyframes floatParticle {
+            0% { transform: translateY(20px) scale(0.5); opacity: 0; }
+            20% { opacity: 0.5; transform: translateY(0px) scale(1.2); }
+            80% { opacity: 0.5; transform: translateY(-40px) scale(1.2); }
+            100% { transform: translateY(-60px) scale(0.5); opacity: 0; }
+          }
+        </style>
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            const banner = document.getElementById('last-run-banner');
+            if (banner) {
+              for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.className = 'banner-particle';
+                const size = Math.random() * 20 + 8;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                p.style.animationDuration = (Math.random() * 5 + 4) + 's';
+                p.style.animationDelay = (Math.random() * 5) + 's';
+                banner.appendChild(p);
+              }
+            }
+          });
+        </script>
       {% elif last_run.status == 'running' %}
-        <i data-lucide="loader-2" class="spin" style="width: 40px; height: 40px; color: #ffffff;"></i>
+        <l-bouncy size="40" speed="1.75" color="#ffffff"></l-bouncy>
         <h2 style="margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">{{ _('Escaneo en progreso...') }}</h2>
       {% else %}
         <i data-lucide="alert-circle" style="width: 40px; height: 40px; color: #ffffff;"></i>

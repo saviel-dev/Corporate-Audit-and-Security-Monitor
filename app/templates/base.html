@@ -19,6 +19,8 @@
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
+  <!-- UI Ball Loaders -->
+  <script type="module" defer src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/bouncy.js"></script>
   {% block head %}{% endblock %}
   <script>
     if (localStorage.getItem('theme') === 'light') {
@@ -204,7 +206,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
-  <script src="{{ url_for('static', filename='js/main.js') }}?v=5"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=6"></script>
   <script>lucide.createIcons();</script>
   {% block scripts %}{% endblock %}
 </body>

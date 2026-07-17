@@ -263,6 +263,10 @@ def _execute_scan(run_id: int, app) -> None:
         elif is_theft:
             total_alerts += 1
 
+        run.total_processed = total_processed
+        run.total_alerts = total_alerts
+        run.total_errors = total_errors
+
         db.session.commit()
 
     # ── Finalize run ──────────────────────────────────────────────────────────

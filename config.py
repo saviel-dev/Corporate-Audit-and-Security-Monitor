@@ -9,16 +9,20 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class Config:
     # ── App ──────────────────────────────────────────────────────────────────
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
     DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
     # ── Database ──────────────────────────────────────────────────────────────
-    if os.environ.get("VERCEL"):
-        _default_db = "sqlite:////tmp/monitor.db"
-    else:
-        _default_db = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'monitor.db')}"
-        
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", _default_db)
+    # Only use Neon DB. Fallback to the provided Neon URL if environment variable is missing.
+    _neon_db = "postgresql://neondb_owner:npg_2ZrioOxVb5RX@ep-broad-block-avz1v0wq-pooler.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", _neon_db)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Enable connection pooling health checks (vital for Neon/Serverless Postgres)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
 
     # ── File paths ────────────────────────────────────────────────────────────
     if os.environ.get("VERCEL"):

@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnManualScan) {
               btnManualScan.disabled = true;
               btnManualScan.style.opacity = '0.7';
-              btnManualScan.innerHTML = '<i data-lucide="loader" class="spin"></i> Escaneando...';
+              btnManualScan.innerHTML = '<l-bouncy size="20" speed="1.75" color="#ffffff"></l-bouncy> Escaneando...';
               if (window.lucide) lucide.createIcons();
             }
             // Keep checking

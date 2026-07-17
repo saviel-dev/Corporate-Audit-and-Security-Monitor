@@ -131,10 +131,55 @@
     .login-flash.error { background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger); }
     .login-flash.warning { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid var(--color-warning); }
     .login-flash.info { background: var(--brand-bg); color: var(--brand); border: 1px solid var(--brand); }
+    
+    /* Full Screen Loader */
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-base);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .loader-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .loader-text {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .loader-subtext {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
   </style>
+  <script type="module" defer src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/bouncy.js"></script>
 </head>
 <body class="login-body">
-  <div class="login-container">
+  <!-- Full Screen Loader Overlay -->
+  <div class="loader-overlay" id="loader-overlay">
+    <l-bouncy size="60" speed="1.75" color="#3b82f6" style="margin-bottom: 24px;"></l-bouncy>
+    <div class="loader-text">{{ _('Iniciando sistema...') }}</div>
+    <div class="loader-subtext" id="loader-subtext">{{ _('Sincronizando con base de datos Neon') }}</div>
+  </div>
+
+  <div class="login-container" id="login-container">
     <div class="login-logo">
       <div class="logo-icon">
         <i data-lucide="shield-check"></i>
@@ -160,7 +205,7 @@
         {% endif %}
       {% endwith %}
 
-      <form method="POST" action="{{ url_for('main.login') }}">
+      <form id="login-form">
         <div class="form-group">
           <label class="form-label" for="username">{{ _('Usuario') }}</label>
           <input type="text" class="form-control" id="username" name="username" placeholder="{{ _('Ingresa tu usuario') }}" required autofocus autocomplete="username" />
@@ -203,6 +248,86 @@
         
         // Re-render lucide icons
         lucide.createIcons();
+      });
+    }
+
+    // Handle form submission via AJAX with Loader
+    const loginForm = document.getElementById('login-form');
+    const loaderOverlay = document.getElementById('loader-overlay');
+    const loginContainer = document.getElementById('login-container');
+    const loaderSubtext = document.getElementById('loader-subtext');
+
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Verificando...';
+        lucide.createIcons();
+
+        try {
+          const response = await fetch('{{ url_for("main.login") }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok && result.success) {
+            // Success: Trigger the loader
+            loginContainer.style.opacity = '0';
+            loginContainer.style.transition = 'opacity 0.4s ease';
+            
+            setTimeout(() => {
+              loginContainer.style.display = 'none';
+              loaderOverlay.classList.add('active');
+              
+              // Simulate data loading phases for visual effect
+              setTimeout(() => {
+                loaderSubtext.textContent = 'Descargando información corporativa...';
+              }, 1200);
+              
+              setTimeout(() => {
+                loaderSubtext.textContent = 'Preparando Dashboard interactivo...';
+              }, 2500);
+
+              // Redirect to dashboard after 3.5 seconds
+              setTimeout(() => {
+                window.location.href = '{{ url_for("main.dashboard") }}';
+              }, 3500);
+            }, 400);
+            
+          } else {
+            // Error
+            submitBtn.disabled = false;
+            submitBtn.textContent = '{{ _("Iniciar Sesión") }}';
+            
+            // Show dynamic flash error
+            const flashContainer = document.querySelector('.login-flashes') || document.createElement('div');
+            flashContainer.className = 'login-flashes';
+            flashContainer.innerHTML = `
+              <div class="login-flash error">
+                <i data-lucide="alert-circle"></i>
+                <span>${result.message || 'Error de autenticación.'}</span>
+              </div>
+            `;
+            if (!document.querySelector('.login-flashes')) {
+              loginForm.parentNode.insertBefore(flashContainer, loginForm);
+            }
+            lucide.createIcons();
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          submitBtn.disabled = false;
+          submitBtn.textContent = '{{ _("Iniciar Sesión") }}';
+        }
       });
     }
   </script>
