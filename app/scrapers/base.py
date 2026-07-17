@@ -191,7 +191,7 @@ class BaseScraper(ABC):
             page.set_default_timeout(self.timeout_ms)
             try:
                 self._do_scrape(page, corp_name, record)
-                if save_pdf and (record.officer_name or record.registered_agent):
+                if save_pdf:
                     record.pdf_path = self._save_pdf(page, corp_name)
             finally:
                 context.close()
