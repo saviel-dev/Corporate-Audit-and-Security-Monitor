@@ -156,6 +156,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
       }
     }
+
+    // 3. Run Detail Page real-time updates
+    const runHeader = document.getElementById('run-detail-header');
+    if (runHeader && data.run_id) {
+      const currentRunId = runHeader.getAttribute('data-run-id');
+      if (currentRunId === String(data.run_id)) {
+        const processedEl = document.getElementById('detail-processed');
+        const alertsEl = document.getElementById('detail-alerts');
+        const errorsEl = document.getElementById('detail-errors');
+        const statusEl = document.getElementById('detail-status');
+        
+        if (processedEl) processedEl.textContent = data.processed;
+        if (alertsEl) alertsEl.textContent = data.alerts || 0;
+        if (errorsEl) errorsEl.textContent = data.errors || 0;
+        
+        if (statusEl) {
+          statusEl.textContent = data.status;
+          statusEl.className = 'run-status-badge run-status-badge--' + data.status;
+          
+          // Auto-refresh the page once it finishes to show the results table
+          if (data.status === 'done' && !window.runReloaded) {
+             window.runReloaded = true;
+             setTimeout(() => window.location.reload(), 1500);
+          }
+        }
+      }
+    }
   }
 
   // 1. Initial State Fetch (run once)

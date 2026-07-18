@@ -271,10 +271,12 @@ def _execute_scan(run_id: int, app) -> None:
         
         from app import socketio
         socketio.emit('scan_progress', {
+            'run_id': run.id,
             'running': True,
             'processed': total_processed,
             'expected': len(corps),
             'alerts': total_alerts,
+            'errors': total_errors,
             'status': run.status
         })
 
@@ -288,10 +290,12 @@ def _execute_scan(run_id: int, app) -> None:
     db.session.commit()
     from app import socketio
     socketio.emit('scan_progress', {
+        'run_id': run.id,
         'running': False,
         'processed': total_processed,
         'expected': len(corps),
         'alerts': total_alerts,
+        'errors': total_errors,
         'status': run.status
     })
 

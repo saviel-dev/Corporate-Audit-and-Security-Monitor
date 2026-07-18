@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<div class="run-detail-header" id="run-detail-header">
+<div class="run-detail-header" id="run-detail-header" data-run-id="{{ run.id }}">
   <div class="run-meta-grid">
     <div class="run-meta-item">
       <div class="run-meta-label">{{ _('Iniciada') }}</div>
@@ -26,20 +26,20 @@
     </div>
     <div class="run-meta-item">
       <div class="run-meta-label">{{ _('Procesadas') }}</div>
-      <div class="run-meta-value">{{ run.total_processed }}</div>
+      <div class="run-meta-value" id="detail-processed">{{ run.total_processed }}</div>
     </div>
     <div class="run-meta-item">
       <div class="run-meta-label">{{ _('Alertas') }}</div>
-      <div class="run-meta-value run-meta-value--alert">{{ run.total_alerts }}</div>
+      <div class="run-meta-value run-meta-value--alert" id="detail-alerts">{{ run.total_alerts }}</div>
     </div>
     <div class="run-meta-item">
       <div class="run-meta-label">{{ _('Errores') }}</div>
-      <div class="run-meta-value run-meta-value--error">{{ run.total_errors }}</div>
+      <div class="run-meta-value run-meta-value--error" id="detail-errors">{{ run.total_errors }}</div>
     </div>
     <div class="run-meta-item">
       <div class="run-meta-label">{{ _('Estado') }}</div>
       <div class="run-meta-value">
-        <span class="run-status-badge run-status-badge--{{ run.status }}">{{ run.status }}</span>
+        <span class="run-status-badge run-status-badge--{{ run.status }}" id="detail-status">{{ run.status }}</span>
       </div>
     </div>
   </div>

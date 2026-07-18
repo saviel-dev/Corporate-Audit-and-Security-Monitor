@@ -27,10 +27,13 @@ import os
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.models import Corporation, DailyRun, ScanResult, StateConfig, STATE_ABBR
+from app.models import Corporation, DailyRun, ScanResult, StateConfig, STATE_ABBR, ABBR_STATE
 
 main_bp = Blueprint("main", __name__)
 
+@main_bp.app_errorhandler(404)
+def not_found_error(error):
+    return render_template("404.html"), 404
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Authentication Hook
@@ -237,7 +240,9 @@ def upload_csv():
                     raw_state = (row.get("state") or row.get("estado") or "").strip()
                     # Accept full name ("Hawaii") or abbreviation ("HI")
                     if len(raw_state) > 2:
-                        state = STATE_ABBR.get(raw_state.title(), raw_state.upper()[:2])
+                        # Case-insensitive lookup to avoid issues like "District Of Columbia"
+                        state_abbr_lower = {k.lower(): v for k, v in STATE_ABBR.items()}
+                        state = state_abbr_lower.get(raw_state.lower(), raw_state.upper()[:2])
                     else:
                         state = raw_state.upper()
 
@@ -581,10 +586,13 @@ def states_import():
                 skipped += 1
                 continue
 
-            state_name = state_raw.title()
-
             # Resolve to 2-letter abbreviation
-            state_code = STATE_ABBR.get(state_name)
+            state_abbr_lower = {k.lower(): v for k, v in STATE_ABBR.items()}
+            state_code = state_abbr_lower.get(state_raw.lower())
+            
+            # Keep original case from STATE_ABBR if found, else just title it
+            state_name = ABBR_STATE.get(state_code, state_raw.title()) if state_code else state_raw.title()
+            
             if not state_code:
                 errors.append(f"Línea {i}: estado desconocido — '{state_name}'")
                 skipped += 1
@@ -641,10 +649,17 @@ def download_output(filename):
     if "output/" in filename:
         filename = filename.split("output/")[-1]
         
-    if filename.lower().endswith('.pdf'):
+    if filename.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg')):
         if not filename.startswith("pdfs/"):
             filename = f"pdfs/{os.path.basename(filename)}"
-        return send_from_directory(current_app.config["OUTPUT_FOLDER"], filename, mimetype='application/pdf')
+            
+        mimetype = 'application/pdf'
+        if filename.lower().endswith('.png'):
+            mimetype = 'image/png'
+        elif filename.lower().endswith(('.jpg', '.jpeg')):
+            mimetype = 'image/jpeg'
+            
+        return send_from_directory(current_app.config["OUTPUT_FOLDER"], filename, mimetype=mimetype)
         
     # For Excel reports, send as attachment
     if not filename.startswith("reports/"):

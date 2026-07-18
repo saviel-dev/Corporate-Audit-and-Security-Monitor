@@ -56,29 +56,24 @@
       margin-top: 4px;
     }
     .login-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 32px 28px;
+      /* Removed background and border to match the transparent look */
+      padding: 10px 0;
       opacity: 0;
       animation: fadeInSlideUp 0.6s var(--ease) forwards 0.2s;
     }
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
+      position: relative;
     }
     .form-label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
+      display: none; /* Hide labels, use placeholders */
     }
     .form-control {
       width: 100%;
       background: var(--bg-elevated);
       border: 1px solid var(--border-default);
       color: var(--text-primary);
-      padding: 12px 14px;
+      padding: 14px 14px 14px 48px; /* Extra padding on left for icon */
       border-radius: var(--radius-md);
       font-size: 0.95rem;
       font-family: var(--font-body);
@@ -88,12 +83,74 @@
     .form-control:focus {
       border-color: var(--brand);
     }
+    .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+      transition: color var(--duration) ease;
+    }
+    
+    /* Minimalist Typing Micro-animations */
+    @keyframes typingPulseIcon {
+      0% { transform: translateY(-50%) scale(1); color: var(--brand); }
+      50% { transform: translateY(-50%) scale(1.15); color: var(--brand); }
+      100% { transform: translateY(-50%) scale(1); color: var(--text-secondary); }
+    }
+    @keyframes typingGlow {
+      0% { box-shadow: 0 0 0 0px rgba(86, 127, 251, 0.3); }
+      100% { box-shadow: 0 0 0 8px rgba(86, 127, 251, 0); }
+    }
+    .form-group.is-typing .input-icon {
+      animation: typingPulseIcon 0.15s ease-out;
+      color: var(--brand);
+    }
+    .form-group.is-typing .form-control {
+      animation: typingGlow 0.25s ease-out;
+    }
+    
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 16px 4px 24px 4px;
+      font-size: 0.85rem;
+    }
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .checkbox-container input {
+      accent-color: var(--brand);
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+    .forgot-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-style: italic;
+      transition: color var(--duration);
+    }
+    .forgot-link:hover {
+      color: var(--brand);
+    }
     .btn-login {
       width: 100%;
-      margin-top: 10px;
-      padding: 12px;
-      font-size: 0.95rem;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
       justify-content: center;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      /* Keeping the primary brand color but matching the wider button style */
     }
     
     /* Login flashes */
@@ -164,9 +221,10 @@
   </div>
 
   <div class="login-container" id="login-container">
-    <div class="login-logo">
-      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Corporate Cash Credit" />
-      <p>{{ _('Control de acceso al sistema') }}</p>
+    <div class="login-logo" style="display: flex; justify-content: center; margin-bottom: 40px;">
+      <div style="width: 120px; height: 120px; border-radius: 50%; background: var(--brand-bg); border: 2px solid var(--brand); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 15px;">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Corporate Cash Credit" style="width: 100%; height: auto; margin: 0;" />
+      </div>
     </div>
 
     <div class="login-card">
@@ -188,20 +246,27 @@
 
       <form id="login-form">
         <div class="form-group">
-          <label class="form-label" for="username">{{ _('Usuario') }}</label>
-          <input type="text" class="form-control" id="username" name="username" placeholder="{{ _('Ingresa tu usuario') }}" required autofocus autocomplete="username" />
+          <i data-lucide="user" class="input-icon"></i>
+          <input type="text" class="form-control" id="username" name="username" placeholder="{{ _('Username') }}" required autofocus autocomplete="username" />
         </div>
         <div class="form-group">
-          <label class="form-label" for="password">{{ _('Contraseña') }}</label>
-          <div style="position: relative;">
-            <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" style="padding-right: 40px;" />
-            <button type="button" id="toggle-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
-              <i data-lucide="eye" id="eye-icon" style="width: 18px; height: 18px;"></i>
-            </button>
-          </div>
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" class="form-control" id="password" name="password" placeholder="{{ _('Password') }}" required autocomplete="current-password" />
+          <button type="button" id="toggle-password" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+            <i data-lucide="eye" id="eye-icon" style="width: 18px; height: 18px;"></i>
+          </button>
         </div>
+        
+        <div class="form-actions">
+          <label class="checkbox-container">
+            <input type="checkbox" name="remember" />
+            <span>{{ _('Remember me') }}</span>
+          </label>
+          <a href="#" class="forgot-link">{{ _('Forgot Password?') }}</a>
+        </div>
+        
         <button type="submit" class="btn btn-primary btn-login">
-          {{ _('Iniciar Sesión') }}
+          {{ _('INICIAR SESIÓN') }}
         </button>
       </form>
     </div>
@@ -231,6 +296,25 @@
         lucide.createIcons();
       });
     }
+
+    // Typing Micro-animations
+    const formControls = document.querySelectorAll('.form-control');
+    formControls.forEach(input => {
+      let typingTimer;
+      input.addEventListener('input', () => {
+        const formGroup = input.closest('.form-group');
+        if (formGroup) {
+          formGroup.classList.remove('is-typing');
+          void formGroup.offsetWidth; // Force reflow to restart animation
+          formGroup.classList.add('is-typing');
+          
+          clearTimeout(typingTimer);
+          typingTimer = setTimeout(() => {
+            formGroup.classList.remove('is-typing');
+          }, 250);
+        }
+      });
+    });
 
     // Handle form submission via AJAX with Loader
     const loginForm = document.getElementById('login-form');
