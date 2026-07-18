@@ -1,14 +1,17 @@
+import os
 import logging
 
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_babel import Babel
+from flask_socketio import SocketIO
 from config import Config
 
 logger = logging.getLogger(__name__)
 
 db = SQLAlchemy()
 babel = Babel()
+socketio = SocketIO(cors_allowed_origins="*")
 
 def get_locale():
     lang = request.cookies.get('lang')
@@ -22,9 +25,8 @@ def create_app(config_class=Config):
     
     app.config['BABEL_DEFAULT_LOCALE'] = 'en'
     # translations/ is at the project root, one level above app/
-    import os as _os
-    app.config['BABEL_TRANSLATION_DIRECTORIES'] = _os.path.join(
-        _os.path.dirname(app.root_path), 'translations'
+    app.config['BABEL_TRANSLATION_DIRECTORIES'] = os.path.join(
+        os.path.dirname(app.root_path), 'translations'
     )
 
     # Ensure required directories exist
@@ -33,6 +35,7 @@ def create_app(config_class=Config):
     # Init extensions
     db.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
+    socketio.init_app(app, async_mode='threading')
 
     # Register blueprints
     from app.routes import main_bp

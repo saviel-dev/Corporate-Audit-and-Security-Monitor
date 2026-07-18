@@ -7,6 +7,7 @@
   <meta name="description"
     content="Corporate Cash Credit Monitor — Vigilancia diaria de registros corporativos en EE. UU." />
   <title>{% block title %}Corporate Monitor{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}?v=2" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,6 +22,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
   <!-- UI Ball Loaders -->
   <script type="module" defer src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/bouncy.js"></script>
+  
+  <!-- Socket.IO -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  
   {% block head %}{% endblock %}
   <script>
     if (localStorage.getItem('theme') === 'light') {
@@ -36,13 +41,11 @@
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo" style="position: relative;">
-      <div class="logo-icon">
-        <i data-lucide="shield-check"></i>
-      </div>
-      <div class="logo-text">
-        <span class="logo-title">Corp Monitor</span>
-        <span class="logo-subtitle">Cash Credit</span>
+    <div class="sidebar-logo" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 0;">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Corporate Cash Credit" style="width: 45px; height: 45px; object-fit: contain;" class="logo-image" />
+      <div class="logo-text" style="display: flex; flex-direction: column;">
+        <span class="logo-title" style="color: #4065d4; font-weight: 800; font-size: 1.15rem; line-height: 1.2; letter-spacing: -0.3px;">Corp Monitor</span>
+        <span class="logo-subtitle" style="color: #567ffb; font-size: 0.8rem; font-weight: 600;">Cash Credit</span>
       </div>
       <button id="sidebar-collapse-btn" aria-label="Colapsar sidebar" style="position: absolute; right: -12px; top: 24px; width: 24px; height: 24px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 50%; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; z-index: 110; transition: all var(--duration);" onmouseover="this.style.borderColor='var(--brand)'; this.style.color='var(--brand)';" onmouseout="this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)';">
         <i data-lucide="menu" id="collapse-icon" style="width: 14px; height: 14px;"></i>
@@ -206,7 +209,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
-  <script src="{{ url_for('static', filename='js/main.js') }}?v=6"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=7"></script>
   <script>lucide.createIcons();</script>
   {% block scripts %}{% endblock %}
 </body>

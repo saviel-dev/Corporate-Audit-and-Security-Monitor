@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="{{ _('Inicio de sesión') }} - Corporate Monitor" />
   <title>{{ _('Iniciar Sesión') }} — Corporate Monitor</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}?v=2" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -44,27 +45,10 @@
       opacity: 0;
       animation: fadeInSlideUp 0.6s var(--ease) forwards 0.1s;
     }
-    .login-logo .logo-icon {
-      width: 56px;
-      height: 56px;
-      margin: 0 auto 16px;
-      background: var(--brand-bg);
-      border: 1px solid var(--border-active);
-      color: var(--brand);
-      border-radius: var(--radius-lg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .login-logo .logo-icon svg {
-      width: 28px;
-      height: 28px;
-    }
-    .login-logo h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0;
+    .login-logo img {
+      max-width: 220px;
+      height: auto;
+      margin-bottom: 8px;
     }
     .login-logo p {
       font-size: 0.9rem;
@@ -181,10 +165,7 @@
 
   <div class="login-container" id="login-container">
     <div class="login-logo">
-      <div class="logo-icon">
-        <i data-lucide="shield-check"></i>
-      </div>
-      <h1>Corporate Monitor</h1>
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Corporate Cash Credit" />
       <p>{{ _('Control de acceso al sistema') }}</p>
     </div>
 

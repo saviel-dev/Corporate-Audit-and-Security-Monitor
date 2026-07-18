@@ -113,84 +113,110 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Scan Progress Polling ──────────────────────────────────────────────
+  // ── Scan Progress WebSocket ──────────────────────────────────────────────
   const progressContainer = document.getElementById('scan-progress-container');
   const progressText = document.getElementById('scan-progress-text');
   const progressBar = document.getElementById('scan-progress-bar');
   const btnManualScan = document.getElementById('btn-manual-scan');
 
-  if (progressContainer && progressText && progressBar) {
-    function checkScanStatus() {
-      fetch('/api/scan_status')
-        .then(res => res.json())
-        .then(data => {
-          let processed = data.processed || 0;
-          let expected = data.expected || 1; 
-          
-          // Expected could grow if discovery is running, so max it if needed
-          if (processed > expected) expected = processed;
-          
-          let percentage = (processed / expected) * 100;
-          if (percentage > 100) percentage = 100;
+  function updateScanUI(data) {
+    if (progressContainer && progressText && progressBar) {
+      if (!data.running && data.status === 'done') {
+        progressText.textContent = "Escaneo Completo";
+        progressBar.style.width = "100%";
+        progressBar.style.background = "var(--success, #22c55e)";
+      } else {
+        let processed = data.processed || 0;
+        let expected = data.expected || 1; 
+        
+        // Expected could grow if discovery is running, so max it if needed
+        if (processed > expected) expected = processed;
+        
+        let percentage = (processed / expected) * 100;
+        if (percentage > 100) percentage = 100;
 
-          progressText.textContent = `${processed} / ${expected}`;
-          progressBar.style.width = `${percentage}%`;
-
-          if (data.running) {
-            if (btnManualScan) {
-              btnManualScan.disabled = true;
-              btnManualScan.style.opacity = '0.7';
-              btnManualScan.innerHTML = '<l-bouncy size="20" speed="1.75" color="#ffffff"></l-bouncy> Escaneando...';
-              if (window.lucide) lucide.createIcons();
-            }
-            // Keep checking
-            setTimeout(checkScanStatus, 2000);
-          } else {
-            if (btnManualScan) {
-              btnManualScan.disabled = false;
-              btnManualScan.style.opacity = '1';
-              btnManualScan.innerHTML = '<i data-lucide="play-circle"></i> Escaneo Manual';
-              if (window.lucide) lucide.createIcons();
-            }
-          }
-        })
-        .catch(err => console.error("Error fetching scan status:", err));
+        progressText.textContent = `${processed} / ${expected}`;
+        progressBar.style.width = `${percentage}%`;
+        progressBar.style.background = "var(--primary)";
+      }
     }
-    
-    // Start polling on page load
-    checkScanStatus();
+
+    if (data.running) {
+      if (btnManualScan && !btnManualScan.disabled) {
+        btnManualScan.disabled = true;
+        btnManualScan.style.opacity = '0.7';
+        btnManualScan.innerHTML = '<l-bouncy size="20" speed="1.75" color="#ffffff"></l-bouncy> Escaneando...';
+        if (window.lucide) lucide.createIcons();
+      }
+    } else {
+      if (btnManualScan && btnManualScan.disabled) {
+        btnManualScan.disabled = false;
+        btnManualScan.style.opacity = '1';
+        btnManualScan.innerHTML = '<i data-lucide="play-circle"></i> Escaneo Manual';
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+  }
+
+  // 1. Initial State Fetch (run once)
+  if (progressContainer && progressText && progressBar) {
+    fetch('/api/scan_status')
+      .then(res => res.json())
+      .then(data => updateScanUI(data))
+      .catch(err => console.error("Error fetching scan status:", err));
+  }
+
+  // 2. Real-time Updates via Socket.IO
+  if (window.io) {
+    const socket = io();
+    socket.on('scan_progress', function(data) {
+      updateScanUI(data);
+    });
   }
 
   // ── Stat Numbers Animation (Count Up) ──────────────────────────────────
   const statValues = document.querySelectorAll('.stat-value');
+  const hasAnimatedStats = sessionStorage.getItem('statsAnimated');
+
   statValues.forEach(el => {
     const targetText = el.textContent.trim();
     const target = parseInt(targetText, 10);
+    
     if (!isNaN(target) && target > 0) {
-      el.textContent = '0';
-      const duration = 1500; // 1.5 seconds
-      const startTime = performance.now();
+      if (!hasAnimatedStats) {
+        // Animate only on first load
+        el.textContent = '0';
+        const duration = 1500; // 1.5 seconds
+        const startTime = performance.now();
 
-      const updateCounter = (currentTime) => {
-        const elapsedTime = currentTime - startTime;
-        let progress = elapsedTime / duration;
-        if (progress > 1) progress = 1;
+        const updateCounter = (currentTime) => {
+          const elapsedTime = currentTime - startTime;
+          let progress = elapsedTime / duration;
+          if (progress > 1) progress = 1;
 
-        // ease-out cubic
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        const current = Math.floor(target * easeOut);
+          // ease-out cubic
+          const easeOut = 1 - Math.pow(1 - progress, 3);
+          const current = Math.floor(target * easeOut);
 
-        el.textContent = current;
+          el.textContent = current;
 
-        if (progress < 1) {
-          requestAnimationFrame(updateCounter);
-        } else {
-          el.textContent = targetText; // fallback to original text format if needed
-        }
-      };
-      requestAnimationFrame(updateCounter);
+          if (progress < 1) {
+            requestAnimationFrame(updateCounter);
+          } else {
+            el.textContent = targetText; 
+          }
+        };
+        requestAnimationFrame(updateCounter);
+      } else {
+        // Show immediately if already animated this session
+        el.textContent = targetText;
+      }
     }
   });
+
+  if (!hasAnimatedStats) {
+    sessionStorage.setItem('statsAnimated', 'true');
+  }
 
   // ── Theme Toggle ──────────────────────────────────────────────────────────
   const themeToggle = document.getElementById('theme-toggle');

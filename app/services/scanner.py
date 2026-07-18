@@ -268,6 +268,15 @@ def _execute_scan(run_id: int, app) -> None:
         run.total_errors = total_errors
 
         db.session.commit()
+        
+        from app import socketio
+        socketio.emit('scan_progress', {
+            'running': True,
+            'processed': total_processed,
+            'expected': len(corps),
+            'alerts': total_alerts,
+            'status': run.status
+        })
 
     # ── Finalize run ──────────────────────────────────────────────────────────
     run.finished_at     = datetime.now(timezone.utc)
@@ -275,6 +284,16 @@ def _execute_scan(run_id: int, app) -> None:
     run.total_alerts    = total_alerts
     run.total_errors    = total_errors
     run.status          = "done"
+    
+    db.session.commit()
+    from app import socketio
+    socketio.emit('scan_progress', {
+        'running': False,
+        'processed': total_processed,
+        'expected': len(corps),
+        'alerts': total_alerts,
+        'status': run.status
+    })
 
     # ── Generate Excel report ─────────────────────────────────────────────────
     try:

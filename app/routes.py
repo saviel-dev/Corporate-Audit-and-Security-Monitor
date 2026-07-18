@@ -58,6 +58,10 @@ def set_default_language(response):
 
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
+    # If already logged in, skip the login page and loader entirely
+    if request.method == "GET" and session.get("logged_in"):
+        return redirect(url_for("main.dashboard"))
+
     if request.method == "POST":
         # Handle AJAX login for the loader effect
         if request.is_json:
@@ -66,6 +70,7 @@ def login():
             password = data.get("password", "")
             
             if username == "admin" and password == current_app.config.get("ADMIN_PASSWORD", "admin123"):
+                session.permanent = True
                 session["logged_in"] = True
                 return jsonify({"success": True})
             else:
@@ -76,6 +81,7 @@ def login():
         password = request.form.get("password", "")
 
         if username == "admin" and password == current_app.config.get("ADMIN_PASSWORD", "admin123"):
+            session.permanent = True
             session["logged_in"] = True
             flash(_("Sesión iniciada correctamente."), "success")
             return redirect(url_for("main.dashboard"))

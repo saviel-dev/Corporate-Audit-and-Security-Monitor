@@ -88,7 +88,30 @@ class HawaiiScraper(BaseScraper):
 
     def _fill_search(self, page, corp_name: str) -> bool:
         """Fill the LWC search input and trigger search."""
-        # Try multiple selector patterns for LWC inputs
+        try:
+            # LWC often uses Shadow DOM. get_by_placeholder pierces it reliably.
+            loc = page.get_by_placeholder("Enter a Business Name", exact=False)
+            if loc.count() > 0:
+                el = loc.first
+                el.click()
+                page.wait_for_timeout(300)
+                el.fill(corp_name)
+                page.wait_for_timeout(500)
+                logger.info("[HI] Typed '%s' into search box via placeholder", corp_name)
+
+                # Submit: press Enter since finding the button can also be tricky
+                page.keyboard.press("Enter")
+
+                # Wait for LWC to re-render results
+                try:
+                    page.wait_for_timeout(3_000)
+                except Exception:
+                    pass
+                return True
+        except Exception as e:
+            logger.warning("[HI] Failed to fill search via placeholder: %s", e)
+
+        # Fallback to old selector logic if placeholder fails
         selectors = [
             "input[placeholder*='search' i]",
             "input[placeholder*='business' i]",

@@ -81,7 +81,7 @@
           <td>{% if r.status_changed %}<span class="change-badge">{{ _('Cambio') }}</span>{% else %}<span class="muted">{{ _('Sin cambio') }}</span>{% endif %}</td>
           <td>
             {% if r.pdf_path %}
-            <a href="/output/pdfs/{{ r.pdf_path }}" target="_blank" class="btn-icon"><i data-lucide="file-text"></i></a>
+            <a href="/output/pdfs/{{ r.pdf_path }}" target="_blank" class="btn-icon" title="Ver Captura"><i data-lucide="image"></i></a>
             {% else %}<span class="muted">—</span>{% endif %}
           </td>
           <td class="muted">

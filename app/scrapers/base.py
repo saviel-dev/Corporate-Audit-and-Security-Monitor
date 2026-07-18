@@ -197,20 +197,23 @@ class BaseScraper(ABC):
                 context.close()
                 browser.close()
 
-    # ── PDF snapshot ──────────────────────────────────────────────────────────
+    # ── Screenshot Evidence ───────────────────────────────────────────────────
 
     def _save_pdf(self, page, corp_name: str) -> str | None:
+        """Saves a full page screenshot instead of a PDF (reusing the pdf_path field)."""
         try:
             date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             safe = "".join(
                 c if c.isalnum() or c in " -_" else "_" for c in corp_name
             ).strip().replace(" ", "_")[:80]
-            path = os.path.join(self.output_dir, f"{date_str}_{self.STATE_CODE}_{safe}.pdf")
-            page.pdf(path=path, format="A4", print_background=True)
-            logger.info("[%s] PDF saved: %s", self.STATE_CODE, path)
+            # Use .png extension
+            path = os.path.join(self.output_dir, f"{date_str}_{self.STATE_CODE}_{safe}.png")
+            # Save as full page screenshot
+            page.screenshot(path=path, full_page=True)
+            logger.info("[%s] Screenshot saved: %s", self.STATE_CODE, path)
             return path
         except Exception as exc:
-            logger.warning("[%s] PDF save failed: %s", self.STATE_CODE, exc)
+            logger.warning("[%s] Screenshot save failed: %s", self.STATE_CODE, exc)
             return None
 
     # ── Abstract method ───────────────────────────────────────────────────────
