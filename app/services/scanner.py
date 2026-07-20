@@ -209,11 +209,17 @@ def _execute_scan(run_id: int, app) -> None:
         return (state_rank, age, c.name or "")
 
     corps = sorted(corps, key=sort_key)
-    logger.info("Scanning %d corporations (after filtering Vendidas).", len(corps))
+    
+    # Allow resuming: skip already scanned corporations for this run_id
+    already_scanned = db.session.query(ScanResult.corporation_id).filter_by(daily_run_id=run_id).all()
+    already_scanned_ids = {r[0] for r in already_scanned}
+    
+    corps = [c for c in corps if c.id not in already_scanned_ids]
+    logger.info("Scanning %d corporations (after filtering Vendidas and already scanned).", len(corps))
 
-    total_processed = 0
-    total_alerts    = 0
-    total_errors    = 0
+    total_processed = run.total_processed or 0
+    total_alerts    = run.total_alerts or 0
+    total_errors    = run.total_errors or 0
 
     # ── SCAN each corporation ─────────────────────────────────────────────────
     for corp in corps:

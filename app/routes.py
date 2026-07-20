@@ -333,7 +333,64 @@ def run_detail(run_id):
 @main_bp.route("/reports")
 def reports():
     runs = DailyRun.query.filter(DailyRun.report_excel_path.isnot(None)).order_by(DailyRun.started_at.desc()).all()
-    return render_template("reports.html", runs=runs)
+    
+    # 1. 7-Day Alert Frequency
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    
+    today = datetime.now().date()
+    seven_days_ago = today - timedelta(days=6)
+    
+    # Group alerts by date for the last 7 days
+    alerts_data = db.session.query(
+        func.date(ScanResult.scanned_at).label('date'),
+        func.count(ScanResult.id).label('count')
+    ).filter(
+        ScanResult.alert == True,
+        func.date(ScanResult.scanned_at) >= seven_days_ago
+    ).group_by(func.date(ScanResult.scanned_at)).all()
+    
+    alert_dict = {str(d): c for d, c in alerts_data}
+    
+    # Build list of 7 days
+    days_labels = []
+    days_counts = []
+    
+    for i in range(7):
+        d = seven_days_ago + timedelta(days=i)
+        d_str = str(d)
+        
+        # Label: e.g. "10 Jul" or "Hoy"
+        if d == today:
+            label = "Hoy"
+        else:
+            months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+            label = f"{d.day} {months[d.month - 1]}"
+            
+        days_labels.append(label)
+        days_counts.append(alert_dict.get(d_str, 0))
+        
+    # 2. Corporations by State (HI and CO)
+    hi_count = Corporation.query.filter(Corporation.state == 'HI', Corporation.status != 'Vendida').count()
+    co_count = Corporation.query.filter(Corporation.state == 'CO', Corporation.status != 'Vendida').count()
+    
+    # Scale max values for the SVG charts
+    max_alert = max(days_counts) if days_counts else 0
+    y_max_alert = max(15, ((max_alert // 5) + 1) * 5) # Snap to 5s
+    
+    max_corp = max(hi_count, co_count)
+    y_max_corp = max(150, ((max_corp // 50) + 1) * 50) # Snap to 50s
+    
+    chart_data = {
+        "labels": days_labels,
+        "counts": days_counts,
+        "y_max_alert": y_max_alert,
+        "hi_count": hi_count,
+        "co_count": co_count,
+        "y_max_corp": y_max_corp
+    }
+    
+    return render_template("reports.html", runs=runs, chart_data=chart_data)
 
 
 @main_bp.route("/reports/generate")
@@ -490,18 +547,42 @@ def scan_status():
         return jsonify({"running": False})
     
     # Estimate total expected based on currently available corps
-    # If the scanner is currently running Pipeline A (discovery), total_expected will grow,
-    # but that's fine for a progress bar, it just adjusts.
     total_expected = Corporation.query.filter(
         ~Corporation.status.ilike("%vendida%")
     ).count()
+    
+    resumable_run_id = None
+    if last_run.status in ["error", "cancelled"] and (last_run.total_processed or 0) < total_expected:
+        resumable_run_id = last_run.id
     
     return jsonify({
         "running": last_run.status == "running",
         "processed": last_run.total_processed,
         "expected": total_expected,
-        "status": last_run.status
+        "status": last_run.status,
+        "resumable_run_id": resumable_run_id
     })
+
+@main_bp.route("/scan/resume/<int:run_id>", methods=["POST"])
+def resume_scan(run_id):
+    """Resume an interrupted scan."""
+    from app.services.scanner import launch_scan_thread, SCAN_CANCEL_FLAGS
+    
+    run = DailyRun.query.get_or_404(run_id)
+    if run.status == "running":
+        flash("Este escaneo ya está en ejecución.", "info")
+        return redirect(url_for("main.runs_list"))
+        
+    run.status = "running"
+    db.session.commit()
+    
+    if run_id in SCAN_CANCEL_FLAGS:
+        del SCAN_CANCEL_FLAGS[run_id]
+        
+    launch_scan_thread(run.id, current_app._get_current_object())
+    
+    flash(f"Reanudando escaneo #{run.id}...", "success")
+    return redirect(url_for("main.runs_list"))
 
 
 @main_bp.route("/api/stats")

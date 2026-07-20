@@ -143,13 +143,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formManual = document.getElementById('form-manual-scan');
     const formCancel = document.getElementById('form-cancel-scan');
+    const formResume = document.getElementById('form-resume-scan');
 
     if (data.running) {
       if (formManual) formManual.style.display = 'none';
       if (formCancel) formCancel.style.display = 'block';
+      if (formResume) formResume.style.display = 'none';
     } else {
-      if (formManual) formManual.style.display = 'block';
       if (formCancel) formCancel.style.display = 'none';
+      
+      if (data.resumable_run_id) {
+        if (formManual) formManual.style.display = 'block';
+        if (formResume) {
+          formResume.style.display = 'block';
+          formResume.action = '/scan/resume/' + data.resumable_run_id;
+        }
+      } else {
+        if (formManual) formManual.style.display = 'block';
+        if (formResume) formResume.style.display = 'none';
+      }
     }
 
     // 3. Run Detail Page real-time updates

@@ -114,6 +114,12 @@
           {{ _('Escaneo Manual') }}
         </button>
       </form>
+      <form action="#" method="post" style="width:100%; display:none; margin-top:0.5rem;" id="form-resume-scan">
+        <button type="submit" class="btn-scan" id="btn-resume-scan" data-tooltip="{{ _('Reanudar Escaneo') }}" style="background-color: var(--color-warning); color: #000; border-color: var(--color-warning);">
+          <i data-lucide="fast-forward"></i>
+          {{ _('Reanudar Escaneo') }}
+        </button>
+      </form>
       <form action="{{ url_for('main.manual_cancel') }}" method="post" style="width:100%; display:none;" id="form-cancel-scan">
         <button type="submit" class="btn-scan" id="btn-cancel-scan" data-tooltip="{{ _('Detener Escaneo') }}" style="background-color: var(--color-danger); color: white; border-color: var(--color-danger);">
           <i data-lucide="stop-circle"></i>
