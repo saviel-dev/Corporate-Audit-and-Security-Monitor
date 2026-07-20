@@ -468,6 +468,16 @@ def manual_scan():
     )
     return redirect(url_for("main.runs_list"))
 
+@main_bp.route("/scan/cancel", methods=["POST"])
+def manual_cancel():
+    """Cancel the currently running scan."""
+    last_run = DailyRun.query.filter_by(status="running").order_by(DailyRun.started_at.desc()).first()
+    if last_run:
+        from app.services.scanner import cancel_scan
+        cancel_scan(last_run.id)
+        flash(f"Deteniendo el escaneo #{last_run.id}. Tardará un momento en abortar completamente.", "warning")
+    return redirect(url_for("main.runs_list"))
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JSON API

@@ -44,6 +44,14 @@ def create_app(config_class=Config):
     # Create / migrate tables
     with app.app_context():
         db.create_all()
+        
+        # Clean up any interrupted runs (if the server restarted while running)
+        from app.models import DailyRun
+        interrupted = DailyRun.query.filter_by(status="running").all()
+        for r in interrupted:
+            r.status = "error"
+        if interrupted:
+            db.session.commit()
 
     # Start daily scheduler (only if enabled in config)
     if app.config.get("SCHEDULER_ENABLED", False):

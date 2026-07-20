@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ request.cookies.get('lang', 'en') }}">
 
 <head>
   <meta charset="UTF-8" />
@@ -108,10 +108,16 @@
             style="background: var(--primary); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
         </div>
       </div>
-      <form action="{{ url_for('main.manual_scan') }}" method="post" style="width:100%">
+      <form action="{{ url_for('main.manual_scan') }}" method="post" style="width:100%" id="form-manual-scan">
         <button type="submit" class="btn-scan" id="btn-manual-scan" data-tooltip="{{ _('Escaneo Manual') }}">
           <i data-lucide="play-circle"></i>
           {{ _('Escaneo Manual') }}
+        </button>
+      </form>
+      <form action="{{ url_for('main.manual_cancel') }}" method="post" style="width:100%; display:none;" id="form-cancel-scan">
+        <button type="submit" class="btn-scan" id="btn-cancel-scan" data-tooltip="{{ _('Detener Escaneo') }}" style="background-color: var(--color-danger); color: white; border-color: var(--color-danger);">
+          <i data-lucide="stop-circle"></i>
+          {{ _('Detener Escaneo') }}
         </button>
       </form>
     </div>

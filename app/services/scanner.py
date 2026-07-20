@@ -34,6 +34,13 @@ STATE_PRIORITY = ["HI", "CO", "NM", "MS", "NY", "FL", "CA", "DE", "WY"]
 # Default discovery terms (can be overridden by StateConfig.discovery_terms)
 DEFAULT_DISCOVERY_TERMS = ["Marcio Garcia", "Garcia", "Andrade", "Marcio"]
 
+# Global flags for cancellation
+SCAN_CANCEL_FLAGS: dict[int, bool] = {}
+
+def cancel_scan(run_id: int):
+    """Signals a running scan thread to stop."""
+    SCAN_CANCEL_FLAGS[run_id] = True
+
 
 # ─── Scraper registry ─────────────────────────────────────────────────────────
 
@@ -78,6 +85,7 @@ def _execute_scan(run_id: int, app) -> None:
         logger.error("DailyRun #%d not found.", run_id)
         return
 
+    SCAN_CANCEL_FLAGS[run_id] = False
     run.status = "running"
     db.session.commit()
     logger.info("=== DailyRun #%d started ===", run_id)
@@ -209,6 +217,11 @@ def _execute_scan(run_id: int, app) -> None:
 
     # ── SCAN each corporation ─────────────────────────────────────────────────
     for corp in corps:
+        if SCAN_CANCEL_FLAGS.get(run_id):
+            logger.info("Scan #%d cancelled by user.", run_id)
+            run.status = "cancelled"
+            break
+
         scraper = get_scraper(
             corp.state, output_dir=pdf_dir,
             timeout_ms=timeout_ms, retries=retries, delay_s=delay_s
@@ -240,6 +253,15 @@ def _execute_scan(run_id: int, app) -> None:
                 prev.officer_name_raw  != scraped.officer_name or
                 prev.portal_status     != scraped.portal_status
             )
+
+        # Delete evidence if it's a clean scan to save storage
+        if not is_theft and scraped.pdf_path:
+            import os
+            try:
+                os.remove(scraped.pdf_path)
+                scraped.pdf_path = None
+            except OSError:
+                pass
 
         # Save result
         result = ScanResult(
@@ -285,7 +307,9 @@ def _execute_scan(run_id: int, app) -> None:
     run.total_processed = total_processed
     run.total_alerts    = total_alerts
     run.total_errors    = total_errors
-    run.status          = "done"
+    
+    if not SCAN_CANCEL_FLAGS.get(run_id):
+        run.status = "done"
     
     db.session.commit()
     from app import socketio

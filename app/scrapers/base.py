@@ -128,7 +128,8 @@ class BaseScraper(ABC):
         with sync_playwright() as pw:
             browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
             context = browser.new_context(
-                viewport={"width": 1280, "height": 900},
+                viewport={"width": 1920, "height": 1080},
+                device_scale_factor=2,
                 user_agent=self._ua(),
             )
             page = context.new_page()
@@ -184,7 +185,8 @@ class BaseScraper(ABC):
         with sync_playwright() as pw:
             browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
             context = browser.new_context(
-                viewport={"width": 1280, "height": 900},
+                viewport={"width": 1920, "height": 1080},
+                device_scale_factor=2,
                 user_agent=self._ua(),
             )
             page = context.new_page()
