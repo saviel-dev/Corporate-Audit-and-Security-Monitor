@@ -16,6 +16,7 @@ instance/
 *.db
 
 # Archivos de salida y subidas de la aplicación
+.agents/
 output/
 reports/
 uploads/
@@ -30,6 +31,9 @@ uploads/
 Thumbs.db
 
 # Documentación de planificación e implementación del proyecto
+ejecucion_paso_a_paso.md
+informe_hallazgos_colorado.md
+decisiones.md
 implementation_plan.md
+task.md
 process.md
-requerimientos-monitoreo-corporaciones-sos.md

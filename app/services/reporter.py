@@ -58,6 +58,9 @@ def generate_excel(run_id: int, output_dir: str = "output/reports") -> str:
     COLOR_FLAG_FG     = "F85149"
     COLOR_CLEAR_BG    = "0E2A14"   # dark green for clear rows
     COLOR_CLEAR_FG    = "3FB950"
+    COLOR_CLEAR_FG    = "3FB950"
+    COLOR_WARN_BG     = "2D2311"   # yellow/amber dark for warnings
+    COLOR_WARN_FG     = "E3B341"
     COLOR_ERROR_BG    = "2A1F09"   # dark amber for errors
     COLOR_ERROR_FG    = "D29922"
     COLOR_ALT_BG      = "181C27"   # alternate row
@@ -99,7 +102,7 @@ def generate_excel(run_id: int, output_dir: str = "output/reports") -> str:
     summary_text = (
         f"Corporate Cash Credit Monitor  |  Run #{run_id}  |  {run_date}  |  "
         f"Processed: {run.total_processed}  |  Alerts: {run.total_alerts}  |  "
-        f"Errors: {run.total_errors}"
+        f"En Riesgo: {getattr(run, 'total_warnings', 0)}  |  Errors: {run.total_errors}"
     )
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
     title_cell = ws.cell(row=1, column=1)
@@ -121,7 +124,11 @@ def generate_excel(run_id: int, output_dir: str = "output/reports") -> str:
         elif r.alert:
             bg = COLOR_FLAG_BG
             status_fg = COLOR_FLAG_FG
-            status_val = "Flagged"
+            status_val = "Suspected Stolen"
+        elif r.is_vulnerable:
+            bg = COLOR_WARN_BG
+            status_fg = COLOR_WARN_FG
+            status_val = "At Risk"
         else:
             bg = COLOR_CLEAR_BG if not is_alt else COLOR_ALT_BG
             status_fg = COLOR_CLEAR_FG if not r.error else COLOR_DEFAULT_BG
@@ -133,7 +140,7 @@ def generate_excel(run_id: int, output_dir: str = "output/reports") -> str:
         pdf_link   = r.cloud_link or (f"file:///{r.pdf_path}" if r.pdf_path else None)
         pdf_label  = "Ver PDF" if pdf_link else "—"
         date_str   = r.scanned_at.strftime("%Y-%m-%d %H:%M") if r.scanned_at else "?"
-        notes      = r.alert_reason if r.alert else (r.error_message or r.notes or "")
+        notes      = r.alert_reason if (r.alert or r.is_vulnerable) else (r.error_message or r.notes or "")
 
         ws.row_dimensions[row].height = 22
         data_cell(ws.cell(row=row, column=1), corp_name,  fg_color="E6EDF3", bg_color=bg, bold=True)

@@ -34,7 +34,7 @@ from app.scrapers.base import BaseScraper, ScrapedRecord
 
 logger = logging.getLogger(__name__)
 
-NEW_SEARCH_URL = "https://hbe.dcca.hawaii.gov/"
+NEW_SEARCH_URL = "https://hbe.dcca.hawaii.gov/search-and-buy"
 # Fallback: direct search URL if home page does not render search immediately
 SEARCH_FRAGMENT = "https://hbe.dcca.hawaii.gov/"
 
@@ -78,7 +78,8 @@ class HawaiiScraper(BaseScraper):
 
         # Wait for LWC detail component to render
         try:
-            page.wait_for_timeout(2_000)
+            page.wait_for_timeout(5_000)
+            page.wait_for_selector("div.slds-form-element", timeout=10_000)
         except Exception:
             pass
 
@@ -91,23 +92,24 @@ class HawaiiScraper(BaseScraper):
         try:
             # LWC often uses Shadow DOM. get_by_placeholder pierces it reliably.
             loc = page.get_by_placeholder("Enter a Business Name", exact=False)
-            if loc.count() > 0:
-                el = loc.first
-                el.click()
-                page.wait_for_timeout(300)
-                el.fill(corp_name)
-                page.wait_for_timeout(500)
-                logger.info("[HI] Typed '%s' into search box via placeholder", corp_name)
+            loc.wait_for(state="visible", timeout=15000)
+            loc.click()
+            page.wait_for_timeout(300)
+            loc.fill(corp_name)
+            page.wait_for_timeout(500)
+            logger.info("[HI] Typed '%s' into search box via placeholder", corp_name)
 
-                # Submit: press Enter since finding the button can also be tricky
-                page.keyboard.press("Enter")
+            # Submit: click search button
+            search_btn = page.get_by_role("button", name="Search")
+            search_btn.wait_for(state="visible", timeout=5000)
+            search_btn.click()
 
-                # Wait for LWC to re-render results
-                try:
-                    page.wait_for_timeout(3_000)
-                except Exception:
-                    pass
-                return True
+            # Wait for LWC to re-render results
+            try:
+                page.wait_for_timeout(3_000)
+            except Exception:
+                pass
+            return True
         except Exception as e:
             logger.warning("[HI] Failed to fill search via placeholder: %s", e)
 
@@ -159,57 +161,38 @@ class HawaiiScraper(BaseScraper):
     def _click_best_result(self, page, corp_name: str) -> bool:
         """Find and click the best matching entity in results."""
         # Give LWC extra time to render
-        page.wait_for_timeout(2_000)
+        try:
+            page.wait_for_timeout(3_000)
+            page.wait_for_selector("button.name-cell-btn", timeout=10_000)
+        except Exception:
+            pass
 
         corp_upper = corp_name.upper()
 
-        # Try to find exact/partial text match in result links
-        link_selectors = [
-            "a[href*='entity'], a[href*='business'], a[href*='detail']",
-            "table tbody tr td:first-child a",
-            "lightning-datatable tbody tr td a",
-            ".slds-table tbody tr td a",
-            "ul li a",
-            "a[data-id='entityName']",
-            "[data-entity-name]",
-            "a",  # last resort
-        ]
+        # New portal uses button.name-cell-btn for entity names
+        try:
+            links = page.locator("button.name-cell-btn").all()
+            if not links:
+                logger.info("[HI] No results found for '%s'", corp_name)
+                return False
 
-        for sel in link_selectors:
-            try:
-                links = page.query_selector_all(sel)
-                if not links:
-                    continue
-                # Look for exact/partial match first
-                for link in links:
-                    text = link.inner_text().strip().upper()
-                    if text == corp_upper or (corp_upper[:8] in text and len(text) < 100):
-                        logger.info("[HI] Matched result: '%s'", text)
-                        link.click()
-                        try:
-                            page.wait_for_timeout(3_000)
-                        except Exception:
-                            pass
-                        return True
-                # No exact match: click first non-empty result
-                for link in links:
-                    text = link.inner_text().strip()
-                    if text and len(text) > 3:
-                        logger.info("[HI] Clicking first result: '%s'", text)
-                        link.click()
-                        try:
-                            page.wait_for_timeout(3_000)
-                        except Exception:
-                            pass
-                        return True
-            except Exception:
-                continue
+            # Look for exact/partial match first
+            for link in links:
+                text = link.inner_text().strip().upper()
+                if text == corp_upper or (corp_upper[:8] in text and len(text) < 100):
+                    logger.info("[HI] Matched result: '%s'", text)
+                    link.click()
+                    return True
 
-        # No-results check
-        content = page.inner_text("body").lower()
-        if any(x in content for x in ["no results", "no records", "not found", "0 results"]):
-            logger.info("[HI] No results found for '%s'", corp_name)
-            return False
+            # No exact match: click first non-empty result
+            for link in links:
+                text = link.inner_text().strip()
+                if text and len(text) > 3:
+                    logger.info("[HI] Clicking first result: '%s'", text)
+                    link.click()
+                    return True
+        except Exception as e:
+            logger.warning("[HI] Error clicking best result: %s", e)
 
         return False
 
@@ -242,6 +225,14 @@ class HawaiiScraper(BaseScraper):
 
     def _extract_status(self, page) -> str | None:
         """Find entity status - common labels in HI portal."""
+        try:
+            loc = page.locator('div.info-label:has(span:has-text("Status")) + div.info-value')
+            if loc.count() > 0:
+                return loc.first.inner_text().strip()
+        except Exception:
+            pass
+
+        # Fallback to old selectors
         status_selectors = [
             # LWC formatted text after "Status" label
             "dt:has-text('Status') + dd",
@@ -259,6 +250,13 @@ class HawaiiScraper(BaseScraper):
 
     def _extract_agent(self, page) -> str | None:
         """Find registered agent name in LWC detail page."""
+        try:
+            loc = page.locator('div.info-label:has(span:has-text("Agent Name")) + div.info-value')
+            if loc.count() > 0:
+                return loc.first.inner_text().strip()
+        except Exception:
+            pass
+
         selectors = [
             "dt:has-text('Registered Agent') + dd",
             "dt:has-text('Agent Name') + dd",
@@ -274,6 +272,13 @@ class HawaiiScraper(BaseScraper):
 
     def _extract_officers(self, page) -> str | None:
         """Find officer/director names in LWC detail page."""
+        try:
+            loc = page.locator('lightning-datatable:has(th:has-text("Office")) td[data-label="Name"]')
+            if loc.count() > 0:
+                return loc.first.inner_text().strip()
+        except Exception:
+            pass
+
         selectors = [
             # Officers usually in a table or list
             "dt:has-text('President') + dd",

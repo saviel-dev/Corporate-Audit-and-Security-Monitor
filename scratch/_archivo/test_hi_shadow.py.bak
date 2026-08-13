@@ -1,0 +1,47 @@
+from playwright.sync_api import sync_playwright
+import time
+
+def test_hi(corp_name):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto('https://hbe.dcca.hawaii.gov/', wait_until='domcontentloaded')
+        page.wait_for_timeout(3000)
+        
+        loc = page.get_by_placeholder('Enter a Business Name', exact=False)
+        if loc.count() > 0:
+            loc.first.fill(corp_name)
+            page.keyboard.press('Enter')
+            page.wait_for_timeout(5000)
+            
+            js = '''
+            () => {
+                let all = document.querySelectorAll('*');
+                let shadowRoots = 0;
+                let closed = 0;
+                let open = 0;
+                for (let el of all) {
+                    if (el.shadowRoot) {
+                        shadowRoots++;
+                        if (el.shadowRoot.mode === 'closed') closed++;
+                        if (el.shadowRoot.mode === 'open') open++;
+                    }
+                }
+                
+                let bodyText = document.body.innerText;
+                let foundCorp = bodyText.includes('Kai Ocean Ventures');
+                
+                return { shadowRoots, closed, open, foundCorp, bodyTextPreview: bodyText.substring(0,200) };
+            }
+            '''
+            res = page.evaluate(js)
+            print('Shadow DOM Evaluation:', res)
+            
+            pw_can_see = page.locator('text="Kai Ocean Ventures"').count()
+            print('Playwright text locator count:', pw_can_see)
+            
+            if pw_can_see > 0:
+                print('Playwright CAN see through it!')
+        browser.close()
+
+test_hi('Kai Ocean Ventures LLC')

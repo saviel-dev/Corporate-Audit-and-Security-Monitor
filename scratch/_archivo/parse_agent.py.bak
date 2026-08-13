@@ -1,0 +1,10 @@
+import re
+
+with open('scratch/hi_acme_output.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+    
+# Find occurrences of "Agent Name"
+matches = re.finditer(r'.{0,50}Agent Name.{0,100}', text, re.IGNORECASE)
+for m in matches:
+    print(m.group(0))
+

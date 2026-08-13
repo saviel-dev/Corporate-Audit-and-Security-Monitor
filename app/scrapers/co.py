@@ -46,10 +46,7 @@ class ColoradoScraper(BaseScraper):
         page.goto(SEARCH_URL, wait_until="domcontentloaded")
 
         # Wait for the main search input to appear
-        try:
-            page.wait_for_selector("#searchCriteria", timeout=15_000)
-        except Exception:
-            pass
+        page.wait_for_selector("#searchCriteria", timeout=15_000)
 
         self._fill_entity_search(page, corp_name)
         clicked = self._click_best_result(page, corp_name)
@@ -68,7 +65,6 @@ class ColoradoScraper(BaseScraper):
         name_fields = [
             "#searchCriteria",
             "input[name='searchCriteria']",
-            "input[type='text']:first-of-type",
         ]
         used = self._try_fill(page, name_fields, corp_name)
         if not used:
@@ -92,6 +88,11 @@ class ColoradoScraper(BaseScraper):
 
     def _click_best_result(self, page, corp_name: str) -> bool:
         """Click the first result link. Returns True on success."""
+        # Si la búsqueda por ID redirigió directamente a la ficha, ya estamos ahí
+        if "BusinessEntityDetail.do" in page.url:
+            logger.info("[CO] Redirección directa a página de detalles detectada.")
+            return True
+            
         # Check for error/no-results messages first
         content = page.inner_text("body").lower()
         if "exceeded record count" in content:

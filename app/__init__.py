@@ -1,10 +1,11 @@
-import os
 import logging
+import os
 
 from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
 from flask_babel import Babel
 from flask_socketio import SocketIO
+from flask_sqlalchemy import SQLAlchemy
+
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -13,45 +14,54 @@ db = SQLAlchemy()
 babel = Babel()
 socketio = SocketIO(cors_allowed_origins="*")
 
+
 def get_locale():
-    lang = request.cookies.get('lang')
-    if lang in ['es', 'en']:
+    lang = request.cookies.get("lang")
+    if lang in ["es", "en"]:
         return lang
-    return 'en'  # Default: English
+    return "en"  # Default: English
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
-    
-    app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+
+    app.config["BABEL_DEFAULT_LOCALE"] = "en"
     # translations/ is at the project root, one level above app/
-    app.config['BABEL_TRANSLATION_DIRECTORIES'] = os.path.join(
-        os.path.dirname(app.root_path), 'translations'
+    app.config["BABEL_TRANSLATION_DIRECTORIES"] = os.path.join(
+        os.path.dirname(app.root_path), "translations"
     )
 
     # Ensure required directories exist
     config_class.ensure_directories()
 
+    # Validar invariantes de configuracion (falla rapido con mensaje claro)
+    config_class.validar_configuracion()
+
     # Init extensions
     db.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
-    socketio.init_app(app, async_mode='threading')
+    socketio.init_app(app, async_mode="threading")
 
     # Register blueprints
     from app.routes import main_bp
+
     app.register_blueprint(main_bp)
 
     # Create / migrate tables
     with app.app_context():
         db.create_all()
-        
+
         # Clean up any interrupted runs (if the server restarted while running)
         from app.models import DailyRun
-        interrupted = DailyRun.query.filter_by(status="running").all()
-        for r in interrupted:
-            r.status = "error"
-        if interrupted:
-            db.session.commit()
+        try:
+            interrupted = DailyRun.query.filter_by(status="running").all()
+            for r in interrupted:
+                r.status = "error"
+            if interrupted:
+                db.session.commit()
+        except Exception as e:
+            pass # ignore for migrations
 
     # Start daily scheduler (only if enabled in config)
     if app.config.get("SCHEDULER_ENABLED", False):
@@ -73,11 +83,12 @@ def _start_scheduler(app) -> None:
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         from apscheduler.triggers.cron import CronTrigger
-        from app.services.scanner import run_daily_scan
+
         from app import db as _db
         from app.models import DailyRun
+        from app.services.scanner import run_daily_scan
 
-        hour   = app.config.get("DAILY_RUN_HOUR", 7)
+        hour = app.config.get("DAILY_RUN_HOUR", 7)
         minute = app.config.get("DAILY_RUN_MINUTE", 0)
 
         def _scheduled_job():
@@ -103,6 +114,8 @@ def _start_scheduler(app) -> None:
         logger.info("APScheduler started — daily scan at %02d:%02d ET", hour, minute)
 
     except ImportError:
-        logger.warning("APScheduler not installed. Install it with: pip install apscheduler")
+        logger.warning(
+            "APScheduler not installed. Install it with: pip install apscheduler"
+        )
     except Exception as exc:
         logger.error("Scheduler init failed: %s", exc)

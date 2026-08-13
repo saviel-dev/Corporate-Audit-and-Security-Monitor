@@ -1,0 +1,7 @@
+import sqlite3
+conn = sqlite3.connect('instance/monitor.db')
+c = conn.cursor()
+c.execute("SELECT name, state FROM corporations WHERE state='HI' LIMIT 10;")
+for row in c.fetchall():
+    print(f"HI | {row[0]}")
+conn.close()

@@ -95,6 +95,40 @@
   </div>
 </div>
 {% endif %}
+{% set waf_blocked_states = state_configs | selectattr('waf_blocked_until') | list %}
+{% if waf_blocked_states %}
+<div style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; background: #fffbeb; border: 1px solid #f59e0b; color: #b45309;">
+  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+    <i data-lucide="shield-alert" style="width: 24px; height: 24px;"></i>
+    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">{{ _('WAF Circuit Breaker Activo') }}</h3>
+  </div>
+  <p style="margin: 0; font-size: 1rem;">
+    {{ _('Algunos estados están temporalmente en enfriamiento debido a bloqueos de WAF (ej. Cloudflare):') }}
+  </p>
+  <ul style="margin: 0.5rem 0 0 1.5rem;">
+    {% for state in waf_blocked_states %}
+      <li><strong>{{ state.state_name }} ({{ state.state_code }})</strong>: {{ _('en enfriamiento hasta las') }} {{ state.waf_blocked_until.strftime('%H:%M') }} UTC</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if low_success_states %}
+<div style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c;">
+  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+    <i data-lucide="alert-triangle" style="width: 24px; height: 24px;"></i>
+    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">{{ _('Atención: Baja tasa de éxito en extracción') }}</h3>
+  </div>
+  <p style="margin: 0; font-size: 1rem;">
+    {{ _('Durante el último escaneo, los siguientes estados reportaron un nivel de éxito inferior al umbral del') }} {{ (config.get('UMBRAL_TASA_EXITO', 0.8) * 100) | int }}%:
+  </p>
+  <ul style="margin: 0.5rem 0 0 1.5rem;">
+    {% for metric in low_success_states %}
+      <li><strong>{{ metric.estado }}</strong>: {{ (metric.tasa_exito * 100) | round(1) }}% ({{ metric.total_extraidas }}/{{ metric.total_intentadas }})</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
 
 <!-- Estadísticas Rápidas -->
 <section class="stats-grid" aria-label="Estadísticas generales">
@@ -123,6 +157,32 @@
     <div class="stat-body">
       <div class="stat-value">{{ clean_count }}</div>
       <div class="stat-label">{{ _('Limpias (Último Escaneo)') }}</div>
+    </div>
+  </div>
+  <div class="stat-card" id="stat-excluded">
+    <div class="stat-icon" style="background: var(--color-gray-100); color: var(--color-gray-600);">
+      <i data-lucide="x-circle"></i>
+    </div>
+    <div class="stat-body">
+      {% set total_excluded = excluded_breakdown.values() | sum if excluded_breakdown else 0 %}
+      <div class="stat-value">{{ total_excluded }}</div>
+      <div class="stat-label">{{ _('Excluidas (Muertas)') }}</div>
+      {% if total_excluded > 0 %}
+      <div style="font-size: 0.75rem; color: var(--color-gray-500); margin-top: 0.25rem;">
+        {% for estado, count in excluded_breakdown.items() %}
+          {{ count }} {{ estado }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="stat-card {% if warning_count > 0 %}stat-card--warning{% endif %}" id="stat-warnings">
+    <div class="stat-icon stat-icon--yellow" style="background: var(--color-yellow-100); color: var(--color-yellow-600);">
+      <i data-lucide="alert-triangle"></i>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ warning_count }}</div>
+      <div class="stat-label">{{ _('En Riesgo (Sin Agente)') }}</div>
     </div>
   </div>
   <div class="stat-card {% if alert_count > 0 %}stat-card--alert{% endif %}" id="stat-alerts">

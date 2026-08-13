@@ -1,0 +1,21 @@
+from playwright.sync_api import sync_playwright
+
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto("https://hbe.dcca.hawaii.gov/")
+        page.wait_for_timeout(3000)
+        
+        print("Clicking Search & Buy...")
+        try:
+            page.click("text=Search & Buy", timeout=5000)
+            page.wait_for_timeout(3000)
+            print("URL after click:", page.url)
+        except Exception as e:
+            print("Could not click:", e)
+        
+        browser.close()
+
+if __name__ == "__main__":
+    run()

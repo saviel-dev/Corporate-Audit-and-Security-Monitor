@@ -1,0 +1,94 @@
+from playwright_stealth import Stealth
+from playwright.sync_api import sync_playwright
+import time
+import re
+
+def scrape_co_loop(corps):
+    success_count = 0
+    with Stealth().use_sync(sync_playwright()) as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+        context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+        page = context.new_page()
+        
+        for idx, corp_name in enumerate(corps):
+            print(f'[{idx+1}/{len(corps)}] Testing {corp_name} in CO...')
+            try:
+                page.goto('https://www.sos.state.co.us/biz/BusinessEntityCriteriaExt.do', wait_until='domcontentloaded', timeout=30000)
+                page.wait_for_selector('#searchCriteria', timeout=15000)
+                page.fill('#searchCriteria', corp_name)
+                page.keyboard.press('Enter')
+                page.wait_for_load_state('domcontentloaded', timeout=15000)
+                time.sleep(2)
+                    
+                clicked = False
+                for selector in ['a[href^="BusinessEntityDetail.do"]', 'a[href*="masterFileId"]', 'table tbody tr td a:first-of-type']:
+                    try:
+                        if page.locator(selector).count() > 0:
+                            page.locator(selector).first.click(timeout=5000)
+                            clicked = True
+                            break
+                    except:
+                        pass
+                        
+                if not clicked:
+                    print('  Found results page but could not click any link.')
+                    continue
+                    
+                page.wait_for_load_state('domcontentloaded', timeout=15000)
+                time.sleep(1)
+                
+                html = page.content()
+                m_agent = re.search(r'Registered Agent.*?Name.*?<td[^>]*>(.*?)</td>', html, re.IGNORECASE | re.DOTALL)
+                agent_name = m_agent.group(1).strip() if m_agent else 'NOT FOUND'
+                if agent_name != 'NOT FOUND':
+                    success_count += 1
+                
+                print(f'  SUCCESS! Agent: {agent_name}')
+            except Exception as e:
+                print(f'  Error: {e}')
+            
+            print('  Pausing 4s before next request...')
+            time.sleep(4)
+            
+        browser.close()
+    return success_count
+
+def test_hi(corp_name):
+    print(f'--- Testing {corp_name} in HI ---')
+    with Stealth().use_sync(sync_playwright()) as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+        context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+        page = context.new_page()
+        
+        try:
+            page.goto('https://hbe.dcca.hawaii.gov/', wait_until='domcontentloaded', timeout=30000)
+            print('  Page loaded. Waiting for LWC...')
+            time.sleep(5)
+            
+            page.screenshot(path='scratch/stealth_hi_home.png', full_page=True)
+            
+            loc = page.get_by_placeholder("Enter a Business Name", exact=False)
+            if loc.count() > 0:
+                print('  Found search box!')
+                el = loc.first
+                el.fill(corp_name)
+                page.keyboard.press('Enter')
+                time.sleep(5)
+                page.screenshot(path='scratch/stealth_hi_results.png', full_page=True)
+                print('  Screenshot saved as stealth_hi_results.png')
+            else:
+                print('  Could not find search box. Check stealth_hi_home.png')
+                
+        except Exception as e:
+            print(f'  Error: {e}')
+        finally:
+            browser.close()
+
+if __name__ == '__main__':
+    co_corps = ['Voices Partners LLC', 'Tomozau Team LLC'] * 5  # 10 queries
+    print('=== RUNNING CO VOLUMETRIC TEST ===')
+    successes = scrape_co_loop(co_corps)
+    print(f'CO Loop completed: {successes}/10 passed Cloudflare successfully.')
+    
+    print('\n=== RUNNING HI TEST ===')
+    test_hi('Kai Ocean Ventures LLC')

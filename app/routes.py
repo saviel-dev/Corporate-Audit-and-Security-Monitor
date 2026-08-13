@@ -14,30 +14,32 @@ Blueprint: main_bp
   GET  /api/stats         → JSON stats
 """
 
-import os
 import csv
+import os
 from datetime import datetime, timezone
 
-from flask import (
-    Blueprint, render_template, request, redirect,
-    url_for, flash, jsonify, current_app, send_from_directory, session, make_response
-)
+from flask import (Blueprint, current_app, flash, jsonify, make_response,
+                   redirect, render_template, request, send_from_directory,
+                   session, url_for)
 from flask_babel import gettext as _
-import os
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.models import Corporation, DailyRun, ScanResult, StateConfig, STATE_ABBR, ABBR_STATE
+from app.models import (ABBR_STATE, STATE_ABBR, Corporation, DailyRun,
+                        ScanResult, StateConfig)
 
 main_bp = Blueprint("main", __name__)
+
 
 @main_bp.app_errorhandler(404)
 def not_found_error(error):
     return render_template("404.html"), 404
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Authentication Hook
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @main_bp.before_request
 def require_login():
@@ -50,14 +52,15 @@ def require_login():
 @main_bp.after_request
 def set_default_language(response):
     """If no lang cookie exists, set it to English (the app default)."""
-    if not request.cookies.get('lang'):
-        response.set_cookie('lang', 'en', max_age=60 * 60 * 24 * 365)
+    if not request.cookies.get("lang"):
+        response.set_cookie("lang", "en", max_age=60 * 60 * 24 * 365)
     return response
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Auth Routes
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -71,19 +74,31 @@ def login():
             data = request.get_json()
             username = data.get("username", "").strip()
             password = data.get("password", "")
-            
-            if username == "admin" and password == current_app.config.get("ADMIN_PASSWORD", "admin123"):
+
+            if username == "admin" and password == current_app.config.get(
+                "ADMIN_PASSWORD", "admin123"
+            ):
                 session.permanent = True
                 session["logged_in"] = True
                 return jsonify({"success": True})
             else:
-                return jsonify({"success": False, "message": str(_("Usuario o contraseña incorrectos."))}), 401
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": str(_("Usuario o contraseña incorrectos.")),
+                        }
+                    ),
+                    401,
+                )
 
         # Fallback for standard form submission
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
-        if username == "admin" and password == current_app.config.get("ADMIN_PASSWORD", "admin123"):
+        if username == "admin" and password == current_app.config.get(
+            "ADMIN_PASSWORD", "admin123"
+        ):
             session.permanent = True
             session["logged_in"] = True
             flash(_("Sesión iniciada correctamente."), "success")
@@ -103,16 +118,17 @@ def logout():
 
 @main_bp.route("/set_language/<lang>")
 def set_language(lang):
-    if lang not in ['es', 'en']:
-        lang = 'es'
-    response = make_response(redirect(request.referrer or url_for('main.dashboard')))
-    response.set_cookie('lang', lang, max_age=60*60*24*365)
+    if lang not in ["es", "en"]:
+        lang = "es"
+    response = make_response(redirect(request.referrer or url_for("main.dashboard")))
+    response.set_cookie("lang", lang, max_age=60 * 60 * 24 * 365)
     return response
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def allowed_file(filename: str) -> bool:
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -133,25 +149,45 @@ def parse_date(value: str):
 # Dashboard
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @main_bp.route("/")
 def dashboard():
     total_corps = Corporation.query.count()
-    pending = Corporation.query.filter(
-        Corporation.status.ilike("disponible")
-    ).count()
+    pending = Corporation.query.filter(Corporation.status.ilike("disponible")).count()
 
     last_run = DailyRun.query.order_by(DailyRun.started_at.desc()).first()
-    
+
     clean_count = 0
     alert_count = 0
+    warning_count = 0
+    low_success_states = []
+    excluded_breakdown = {}
+    
+    from app.models import StateConfig
+    state_configs = StateConfig.query.all()
+    
     if last_run:
         alert_count = last_run.total_alerts
-        clean_count = last_run.total_processed - alert_count
+        warning_count = last_run.total_warnings or 0
+        # A clean run is one that was processed, wasn't an alert, warning or error
+        clean_count = last_run.total_processed - alert_count - warning_count - last_run.total_errors
+        
+        from flask import current_app
+        threshold = current_app.config.get("UMBRAL_TASA_EXITO", 0.80)
+        for metric in last_run.state_metrics:
+            if metric.tasa_exito < threshold:
+                low_success_states.append(metric)
+                
+        import json
+        if last_run.excluded_status_breakdown:
+            try:
+                excluded_breakdown = json.loads(last_run.excluded_status_breakdown)
+            except Exception:
+                pass
 
     # Recent alerts
     recent_alerts = (
-        ScanResult.query
-        .filter_by(alert=True)
+        ScanResult.query.filter_by(alert=True)
         .order_by(ScanResult.scanned_at.desc())
         .limit(10)
         .all()
@@ -163,8 +199,12 @@ def dashboard():
         pending=pending,
         clean_count=clean_count,
         alert_count=alert_count,
+        warning_count=warning_count,
         last_run=last_run,
         recent_alerts=recent_alerts,
+        low_success_states=low_success_states,
+        state_configs=state_configs,
+        excluded_breakdown=excluded_breakdown,
     )
 
 
@@ -181,8 +221,7 @@ def corporations_list():
         query = query.filter(Corporation.status.ilike(f"%{status_filter}%"))
 
     corporations = query.order_by(
-        Corporation.priority.desc(),
-        Corporation.date_registered.asc()
+        Corporation.priority.desc(), Corporation.date_registered.asc()
     ).paginate(page=page, per_page=25, error_out=False)
 
     return render_template(
@@ -196,6 +235,7 @@ def corporations_list():
 # ─────────────────────────────────────────────────────────────────────────────
 # CSV Upload
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @main_bp.route("/upload", methods=["GET"])
 def upload_form():
@@ -229,20 +269,28 @@ def upload_csv():
     try:
         with open(upload_path, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
-            reader.fieldnames = [h.strip().lower().replace(" ", "_")
-                                  for h in (reader.fieldnames or [])]
+            reader.fieldnames = [
+                h.strip().lower().replace(" ", "_") for h in (reader.fieldnames or [])
+            ]
 
             for i, row in enumerate(reader, start=2):
                 try:
-                    name = (row.get("name") or row.get("corporation_name") or
-                            row.get("company_name") or row.get("nombre") or 
-                            row.get("corporation") or "").strip()
+                    name = (
+                        row.get("name")
+                        or row.get("corporation_name")
+                        or row.get("company_name")
+                        or row.get("nombre")
+                        or row.get("corporation")
+                        or ""
+                    ).strip()
                     raw_state = (row.get("state") or row.get("estado") or "").strip()
                     # Accept full name ("Hawaii") or abbreviation ("HI")
                     if len(raw_state) > 2:
                         # Case-insensitive lookup to avoid issues like "District Of Columbia"
                         state_abbr_lower = {k.lower(): v for k, v in STATE_ABBR.items()}
-                        state = state_abbr_lower.get(raw_state.lower(), raw_state.upper()[:2])
+                        state = state_abbr_lower.get(
+                            raw_state.lower(), raw_state.upper()[:2]
+                        )
                     else:
                         state = raw_state.upper()
 
@@ -250,22 +298,37 @@ def upload_csv():
                         skipped += 1
                         continue
 
-                    status = (row.get("status") or row.get("estatus") or
-                              row.get("estado_venta") or "Disponible").strip()
-                    corp_id = (row.get("corp_id") or row.get("registry_id") or
-                               row.get("id") or "").strip() or None
-                    date_str = (row.get("date_registered") or
-                                row.get("fecha_registro") or "").strip()
+                    status = (
+                        row.get("status")
+                        or row.get("estatus")
+                        or row.get("estado_venta")
+                        or "Available"
+                    ).strip()
+                    corp_id = (
+                        row.get("corp_id")
+                        or row.get("registry_id")
+                        or row.get("id")
+                        or ""
+                    ).strip() or None
+                    date_str = (
+                        row.get("date_registered") or row.get("fecha_registro") or ""
+                    ).strip()
                     registered = parse_date(date_str) if date_str else None
                     priority = int(row.get("priority") or row.get("prioridad") or 0)
-                    req1 = (row.get("required_term_1") or row.get("termino_1") or "").strip() or None
-                    req2 = (row.get("required_term_2") or row.get("termino_2") or "").strip() or None
+                    req1 = (
+                        row.get("required_term_1") or row.get("termino_1") or ""
+                    ).strip() or None
+                    req2 = (
+                        row.get("required_term_2") or row.get("termino_2") or ""
+                    ).strip() or None
 
                     corp = None
                     if corp_id:
                         corp = Corporation.query.filter_by(corp_id=corp_id).first()
                     if not corp:
-                        corp = Corporation.query.filter_by(name=name, state=state).first()
+                        corp = Corporation.query.filter_by(
+                            name=name, state=state
+                        ).first()
 
                     if corp:
                         corp.status = status
@@ -276,10 +339,14 @@ def upload_csv():
                         corp.source_file = filename
                     else:
                         corp = Corporation(
-                            name=name, state=state, corp_id=corp_id,
-                            status=status, priority=priority,
+                            name=name,
+                            state=state,
+                            corp_id=corp_id,
+                            status=status,
+                            priority=priority,
                             date_registered=registered,
-                            required_term_1=req1, required_term_2=req2,
+                            required_term_1=req1,
+                            required_term_2=req2,
                             source_file=filename,
                         )
                         db.session.add(corp)
@@ -310,6 +377,7 @@ def upload_csv():
 # Daily Runs
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @main_bp.route("/runs")
 def runs_list():
     runs = DailyRun.query.order_by(DailyRun.started_at.desc()).paginate(
@@ -322,8 +390,7 @@ def runs_list():
 def run_detail(run_id):
     run = DailyRun.query.get_or_404(run_id)
     results = (
-        ScanResult.query
-        .filter_by(daily_run_id=run_id)
+        ScanResult.query.filter_by(daily_run_id=run_id)
         .order_by(ScanResult.alert.desc(), ScanResult.scanned_at.asc())
         .all()
     )
@@ -332,73 +399,100 @@ def run_detail(run_id):
 
 @main_bp.route("/reports")
 def reports():
-    runs = DailyRun.query.filter(DailyRun.report_excel_path.isnot(None)).order_by(DailyRun.started_at.desc()).all()
-    
+    runs = (
+        DailyRun.query.filter(DailyRun.report_excel_path.isnot(None))
+        .order_by(DailyRun.started_at.desc())
+        .all()
+    )
+
     # 1. 7-Day Alert Frequency
     from datetime import datetime, timedelta
+
     from sqlalchemy import func
-    
+
     today = datetime.now().date()
     seven_days_ago = today - timedelta(days=6)
-    
+
     # Group alerts by date for the last 7 days
-    alerts_data = db.session.query(
-        func.date(ScanResult.scanned_at).label('date'),
-        func.count(ScanResult.id).label('count')
-    ).filter(
-        ScanResult.alert == True,
-        func.date(ScanResult.scanned_at) >= seven_days_ago
-    ).group_by(func.date(ScanResult.scanned_at)).all()
-    
+    alerts_data = (
+        db.session.query(
+            func.date(ScanResult.scanned_at).label("date"),
+            func.count(ScanResult.id).label("count"),
+        )
+        .filter(
+            ScanResult.alert.is_(True), func.date(ScanResult.scanned_at) >= seven_days_ago
+        )
+        .group_by(func.date(ScanResult.scanned_at))
+        .all()
+    )
+
     alert_dict = {str(d): c for d, c in alerts_data}
-    
+
     # Build list of 7 days
     days_labels = []
     days_counts = []
-    
+
     for i in range(7):
         d = seven_days_ago + timedelta(days=i)
         d_str = str(d)
-        
+
         # Label: e.g. "10 Jul" or "Hoy"
         if d == today:
             label = "Hoy"
         else:
-            months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+            months = [
+                "Ene",
+                "Feb",
+                "Mar",
+                "Abr",
+                "May",
+                "Jun",
+                "Jul",
+                "Ago",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dic",
+            ]
             label = f"{d.day} {months[d.month - 1]}"
-            
+
         days_labels.append(label)
         days_counts.append(alert_dict.get(d_str, 0))
-        
+
     # 2. Corporations by State (HI and CO)
-    hi_count = Corporation.query.filter(Corporation.state == 'HI', Corporation.status != 'Vendida').count()
-    co_count = Corporation.query.filter(Corporation.state == 'CO', Corporation.status != 'Vendida').count()
-    
+    hi_count = Corporation.query.filter(
+        Corporation.state == "HI", Corporation.status != "Vendida"
+    ).count()
+    co_count = Corporation.query.filter(
+        Corporation.state == "CO", Corporation.status != "Vendida"
+    ).count()
+
     # Scale max values for the SVG charts
     max_alert = max(days_counts) if days_counts else 0
-    y_max_alert = max(15, ((max_alert // 5) + 1) * 5) # Snap to 5s
-    
+    y_max_alert = max(15, ((max_alert // 5) + 1) * 5)  # Snap to 5s
+
     max_corp = max(hi_count, co_count)
-    y_max_corp = max(150, ((max_corp // 50) + 1) * 50) # Snap to 50s
-    
+    y_max_corp = max(150, ((max_corp // 50) + 1) * 50)  # Snap to 50s
+
     chart_data = {
         "labels": days_labels,
         "counts": days_counts,
         "y_max_alert": y_max_alert,
         "hi_count": hi_count,
         "co_count": co_count,
-        "y_max_corp": y_max_corp
+        "y_max_corp": y_max_corp,
     }
-    
+
     return render_template("reports.html", runs=runs, chart_data=chart_data)
 
 
 @main_bp.route("/reports/generate")
 def generate_report():
     import io
+
     import openpyxl
     from flask import Response, send_file
-    
+
     state = request.args.get("state", "").strip()
     start_date_str = request.args.get("start_date", "").strip()
     end_date_str = request.args.get("end_date", "").strip()
@@ -411,7 +505,9 @@ def generate_report():
         if start_date_str:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
         if end_date_str:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").replace(
+                hour=23, minute=59, second=59
+            )
     except ValueError as e:
         flash(_("Formato de fecha inválido: %(e)s", e=e), "error")
         return redirect(url_for("main.reports"))
@@ -424,34 +520,51 @@ def generate_report():
         query = query.filter(ScanResult.scanned_at >= start_date)
     if end_date:
         query = query.filter(ScanResult.scanned_at <= end_date)
-    
+
     results = query.order_by(ScanResult.scanned_at.desc()).all()
 
     if not results:
-        flash(_("No se encontraron registros para los filtros seleccionados."), "warning")
+        flash(
+            _("No se encontraron registros para los filtros seleccionados."), "warning"
+        )
         return redirect(url_for("main.reports"))
 
     # Generate format
     if fmt == "csv":
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["ID Registro", "Corporación", "Estado", "Oficial Oficial", "Agente Registrado", "Estatus Portal", "Alerta", "Fecha Escaneo"])
+        writer.writerow(
+            [
+                "ID Registro",
+                "Corporación",
+                "Estado",
+                "Oficial Oficial",
+                "Agente Registrado",
+                "Estatus Portal",
+                "Alerta",
+                "Fecha Escaneo",
+            ]
+        )
         for r in results:
-            writer.writerow([
-                r.id,
-                r.corporation.name,
-                r.corporation.state,
-                r.officer_name_raw or "",
-                r.registered_agent_raw or "",
-                r.portal_status or "",
-                "SÍ" if r.alert else "NO",
-                r.scanned_at.strftime("%d/%m/%Y %H:%M")
-            ])
+            writer.writerow(
+                [
+                    r.id,
+                    r.corporation.name,
+                    r.corporation.state,
+                    r.officer_name_raw or "",
+                    r.registered_agent_raw or "",
+                    r.portal_status or "",
+                    "ROBO" if r.alert else ("RIESGO" if r.is_vulnerable else "NO"),
+                    r.scanned_at.strftime("%d/%m/%Y %H:%M"),
+                ]
+            )
         output.seek(0)
         return Response(
             output.getvalue(),
             mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename=reporte_corporaciones.csv"}
+            headers={
+                "Content-disposition": "attachment; filename=reporte_corporaciones.csv"
+            },
         )
     elif fmt == "pdf":
         now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -461,50 +574,62 @@ def generate_report():
             state=state,
             start_date=start_date_str,
             end_date=end_date_str,
-            now=now_str
+            now=now_str,
         )
     else:
         # Excel format using openpyxl
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Reporte de Escaneo"
-        
+
         # Headers
-        headers = ["ID Registro", "Corporación", "Estado", "Oficial Oficial", "Agente Registrado", "Estatus Portal", "Alerta", "Fecha Escaneo"]
+        headers = [
+            "ID Registro",
+            "Corporación",
+            "Estado",
+            "Oficial Oficial",
+            "Agente Registrado",
+            "Estatus Portal",
+            "Alerta",
+            "Fecha Escaneo",
+        ]
         ws.append(headers)
-        
+
         # Styling headers
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col_num)
             cell.font = openpyxl.styles.Font(bold=True)
-            
+
         for r in results:
-            ws.append([
-                r.id,
-                r.corporation.name,
-                r.corporation.state,
-                r.officer_name_raw or "",
-                r.registered_agent_raw or "",
-                r.portal_status or "",
-                "SÍ" if r.alert else "NO",
-                r.scanned_at.strftime("%d/%m/%Y %H:%M")
-            ])
-            
+            ws.append(
+                [
+                    r.id,
+                    r.corporation.name,
+                    r.corporation.state,
+                    r.officer_name_raw or "",
+                    r.registered_agent_raw or "",
+                    r.portal_status or "",
+                    "ROBO" if r.alert else ("RIESGO" if r.is_vulnerable else "NO"),
+                    r.scanned_at.strftime("%d/%m/%Y %H:%M"),
+                ]
+            )
+
         file_stream = io.BytesIO()
         wb.save(file_stream)
         file_stream.seek(0)
-        
+
         return send_file(
             file_stream,
             as_attachment=True,
             download_name="reporte_corporaciones.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Manual Scan (placeholder — wired in Phase 2)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @main_bp.route("/scan/manual", methods=["POST"])
 def manual_scan():
@@ -521,18 +646,27 @@ def manual_scan():
     flash(
         f"Escaneo iniciado — Run #{run.id}. "
         f"Los resultados aparecerán en Ejecuciones en unos minutos.",
-        "success"
+        "success",
     )
     return redirect(url_for("main.runs_list"))
+
 
 @main_bp.route("/scan/cancel", methods=["POST"])
 def manual_cancel():
     """Cancel the currently running scan."""
-    last_run = DailyRun.query.filter_by(status="running").order_by(DailyRun.started_at.desc()).first()
+    last_run = (
+        DailyRun.query.filter_by(status="running")
+        .order_by(DailyRun.started_at.desc())
+        .first()
+    )
     if last_run:
         from app.services.scanner import cancel_scan
+
         cancel_scan(last_run.id)
-        flash(f"Deteniendo el escaneo #{last_run.id}. Tardará un momento en abortar completamente.", "warning")
+        flash(
+            f"Deteniendo el escaneo #{last_run.id}. Tardará un momento en abortar completamente.",
+            "warning",
+        )
     return redirect(url_for("main.runs_list"))
 
 
@@ -540,47 +674,54 @@ def manual_cancel():
 # JSON API
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @main_bp.route("/api/scan_status")
 def scan_status():
     last_run = DailyRun.query.order_by(DailyRun.started_at.desc()).first()
     if not last_run:
         return jsonify({"running": False})
-    
+
     # Estimate total expected based on currently available corps
     total_expected = Corporation.query.filter(
         ~Corporation.status.ilike("%vendida%")
     ).count()
-    
+
     resumable_run_id = None
-    if last_run.status in ["error", "cancelled"] and (last_run.total_processed or 0) < total_expected:
+    if (
+        last_run.status in ["error", "cancelled"]
+        and (last_run.total_processed or 0) < total_expected
+    ):
         resumable_run_id = last_run.id
-    
-    return jsonify({
-        "running": last_run.status == "running",
-        "processed": last_run.total_processed,
-        "expected": total_expected,
-        "status": last_run.status,
-        "resumable_run_id": resumable_run_id
-    })
+
+    return jsonify(
+        {
+            "running": last_run.status == "running",
+            "processed": last_run.total_processed,
+            "expected": total_expected,
+            "status": last_run.status,
+            "resumable_run_id": resumable_run_id,
+        }
+    )
+
 
 @main_bp.route("/scan/resume/<int:run_id>", methods=["POST"])
 def resume_scan(run_id):
     """Resume an interrupted scan."""
-    from app.services.scanner import launch_scan_thread, SCAN_CANCEL_FLAGS
-    
+    from app.services.scanner import SCAN_CANCEL_FLAGS, launch_scan_thread
+
     run = DailyRun.query.get_or_404(run_id)
     if run.status == "running":
         flash("Este escaneo ya está en ejecución.", "info")
         return redirect(url_for("main.runs_list"))
-        
+
     run.status = "running"
     db.session.commit()
-    
+
     if run_id in SCAN_CANCEL_FLAGS:
         del SCAN_CANCEL_FLAGS[run_id]
-        
+
     launch_scan_thread(run.id, current_app._get_current_object())
-    
+
     flash(f"Reanudando escaneo #{run.id}...", "success")
     return redirect(url_for("main.runs_list"))
 
@@ -597,19 +738,22 @@ def api_stats():
             daily_run_id=last_run.id, alert=True
         ).count()
 
-    return jsonify({
-        "total_corporations": total,
-        "available": available,
-        "sold": sold,
-        "alerts_today": alerts_today,
-        "last_run": last_run.started_at.isoformat() if last_run else None,
-        "last_run_status": last_run.status if last_run else None,
-    })
+    return jsonify(
+        {
+            "total_corporations": total,
+            "available": available,
+            "sold": sold,
+            "alerts_today": alerts_today,
+            "last_run": last_run.started_at.isoformat() if last_run else None,
+            "last_run_status": last_run.status if last_run else None,
+        }
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # State Portal Configuration
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @main_bp.route("/states")
 def states_list():
@@ -661,17 +805,24 @@ def states_import():
         else:
             # No header, assume State \t URL
             reader = csv.DictReader(
-                io.StringIO(content), 
-                delimiter=delimiter, 
-                fieldnames=["state", "business_search_url"]
+                io.StringIO(content),
+                delimiter=delimiter,
+                fieldnames=["state", "business_search_url"],
             )
 
         for i, row in enumerate(reader, start=1 if not has_header else 2):
             # Accept both "state" and "business_search_url"
-            state_raw  = (row.get("state") or "").strip()
-            url_raw    = (row.get("business_search_url") or
-                          row.get("url") or
-                          row.get("search_url") or "").strip().strip('"')
+            state_raw = (row.get("state") or "").strip()
+            url_raw = (
+                (
+                    row.get("business_search_url")
+                    or row.get("url")
+                    or row.get("search_url")
+                    or ""
+                )
+                .strip()
+                .strip('"')
+            )
 
             if not state_raw or not url_raw:
                 skipped += 1
@@ -680,10 +831,14 @@ def states_import():
             # Resolve to 2-letter abbreviation
             state_abbr_lower = {k.lower(): v for k, v in STATE_ABBR.items()}
             state_code = state_abbr_lower.get(state_raw.lower())
-            
+
             # Keep original case from STATE_ABBR if found, else just title it
-            state_name = ABBR_STATE.get(state_code, state_raw.title()) if state_code else state_raw.title()
-            
+            state_name = (
+                ABBR_STATE.get(state_code, state_raw.title())
+                if state_code
+                else state_raw.title()
+            )
+
             if not state_code:
                 errors.append(f"Línea {i}: estado desconocido — '{state_name}'")
                 skipped += 1
@@ -695,12 +850,14 @@ def states_import():
                 existing.state_name = state_name
                 updated += 1
             else:
-                db.session.add(StateConfig(
-                    state_name=state_name,
-                    state_code=state_code,
-                    search_url=url_raw,
-                    scraper_supported=state_code in ("HI", "CO"),
-                ))
+                db.session.add(
+                    StateConfig(
+                        state_name=state_name,
+                        state_code=state_code,
+                        search_url=url_raw,
+                        scraper_supported=state_code in ("HI", "CO"),
+                    )
+                )
                 inserted += 1
 
         db.session.commit()
@@ -717,8 +874,6 @@ def states_import():
             flash(err, "warning")
     flash(msg, "success")
     return redirect(url_for("main.states_list"))
-
-
 
 
 @main_bp.route("/states/<string:code>/toggle", methods=["POST"])
@@ -739,20 +894,24 @@ def download_output(filename):
     filename = filename.replace("\\", "/")
     if "output/" in filename:
         filename = filename.split("output/")[-1]
-        
-    if filename.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg')):
+
+    if filename.lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
         if not filename.startswith("pdfs/"):
             filename = f"pdfs/{os.path.basename(filename)}"
-            
-        mimetype = 'application/pdf'
-        if filename.lower().endswith('.png'):
-            mimetype = 'image/png'
-        elif filename.lower().endswith(('.jpg', '.jpeg')):
-            mimetype = 'image/jpeg'
-            
-        return send_from_directory(current_app.config["OUTPUT_FOLDER"], filename, mimetype=mimetype)
-        
+
+        mimetype = "application/pdf"
+        if filename.lower().endswith(".png"):
+            mimetype = "image/png"
+        elif filename.lower().endswith((".jpg", ".jpeg")):
+            mimetype = "image/jpeg"
+
+        return send_from_directory(
+            current_app.config["OUTPUT_FOLDER"], filename, mimetype=mimetype
+        )
+
     # For Excel reports, send as attachment
     if not filename.startswith("reports/"):
         filename = f"reports/{os.path.basename(filename)}"
-    return send_from_directory(current_app.config["OUTPUT_FOLDER"], filename, as_attachment=True)
+    return send_from_directory(
+        current_app.config["OUTPUT_FOLDER"], filename, as_attachment=True
+    )

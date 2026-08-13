@@ -1,0 +1,20 @@
+import time
+from playwright.sync_api import sync_playwright
+from playwright_stealth import Stealth
+
+def check_block():
+    with Stealth().use_sync(sync_playwright()) as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+        context = browser.new_context(viewport={"width": 1920, "height": 1080})
+        page = context.new_page()
+        page.goto("https://www.sos.state.co.us/biz/BusinessEntityCriteriaExt.do", wait_until="domcontentloaded")
+        try:
+            page.wait_for_selector("#searchCriteria", timeout=10_000)
+            print("Not blocked!")
+        except:
+            print("Blocked! Taking screenshot.")
+            page.screenshot(path="scratch/co_block_check.png")
+        browser.close()
+
+if __name__ == "__main__":
+    check_block()

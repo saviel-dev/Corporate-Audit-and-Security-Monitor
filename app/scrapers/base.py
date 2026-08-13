@@ -23,6 +23,10 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
+class WafBlockException(Exception):
+    """Lanzada cuando se detecta un bloqueo por WAF (Cloudflare/Imperva)."""
+    pass
+
 
 # ─── Data containers ──────────────────────────────────────────────────────────
 
@@ -124,9 +128,15 @@ class BaseScraper(ABC):
 
     def _run_discover_session(self, term: str) -> list[str]:
         """Open a Playwright session and call _do_discover."""
+        from flask import current_app
         from playwright.sync_api import sync_playwright
-        with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
+        from playwright_stealth import Stealth
+
+        use_stealth = current_app.config.get("USE_STEALTH_MODE", True)
+        pw_cm = Stealth().use_sync(sync_playwright()) if use_stealth else sync_playwright()
+
+        with pw_cm as pw:
+            browser = pw.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
             context = browser.new_context(
                 viewport={"width": 1920, "height": 1080},
                 device_scale_factor=2,
@@ -166,7 +176,18 @@ class BaseScraper(ABC):
                             self.STATE_CODE, corp_name, attempt, self.retries)
                 self._attempt(record, corp_name, save_pdf)
                 if record.success:
+                    # Pausa dinámica configurable
+                    from flask import current_app
+                    delay = current_app.config.get("SCRAPER_DELAY_SECONDS", 4)
+                    if delay > 0:
+                        time.sleep(delay)
                     return record
+            except WafBlockException as exc:
+                # Abort all retries immediately if WAF blocks us
+                record.error = True
+                record.error_message = str(exc)
+                logger.error("[%s] WAF Block detected for '%s'. Aborting retries.", self.STATE_CODE, corp_name)
+                return record
             except Exception as exc:
                 last_error = exc
                 logger.warning("[%s] Attempt %d failed for '%s': %s",
@@ -175,15 +196,29 @@ class BaseScraper(ABC):
                     time.sleep(self.delay_s * attempt)
 
         record.error = True
-        record.error_message = str(last_error) if last_error else "Unknown error"
+        if not record.error_message:
+            record.error_message = str(last_error) if last_error else "Unknown error"
         logger.error("[%s] All retries failed for '%s': %s",
                      self.STATE_CODE, corp_name, record.error_message)
+        
+        # Pausa final incluso si fallan los reintentos
+        from flask import current_app
+        delay = current_app.config.get("SCRAPER_DELAY_SECONDS", 4)
+        if delay > 0:
+            time.sleep(delay)
+            
         return record
 
     def _attempt(self, record: ScrapedRecord, corp_name: str, save_pdf: bool) -> None:
+        from flask import current_app
         from playwright.sync_api import sync_playwright
-        with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
+        from playwright_stealth import Stealth
+
+        use_stealth = current_app.config.get("USE_STEALTH_MODE", True)
+        pw_cm = Stealth().use_sync(sync_playwright()) if use_stealth else sync_playwright()
+
+        with pw_cm as pw:
+            browser = pw.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
             context = browser.new_context(
                 viewport={"width": 1920, "height": 1080},
                 device_scale_factor=2,
@@ -195,6 +230,22 @@ class BaseScraper(ABC):
                 self._do_scrape(page, corp_name, record)
                 if save_pdf:
                     record.pdf_path = self._save_pdf(page, corp_name)
+            except Exception as e:
+                # Detección WAF tras cualquier fallo (ej. timeout esperando selector)
+                try:
+                    content = page.content().lower()
+                    waf_patterns = current_app.config.get(
+                        "PATRONES_BLOQUEO_WAF", 
+                        ["you have been blocked", "attention required", "sorry, you have been blocked"]
+                    )
+                    for pattern in waf_patterns:
+                        if pattern in content:
+                            raise WafBlockException("BLOQUEADO_POR_WAF") from e
+                except WafBlockException:
+                    raise
+                except Exception:
+                    pass # Ignorar fallos al chequear el WAF
+                raise # Relanzar error original si no es WAF
             finally:
                 context.close()
                 browser.close()
@@ -223,7 +274,42 @@ class BaseScraper(ABC):
     @abstractmethod
     def _do_scrape(self, page, corp_name: str, record: ScrapedRecord) -> None:
         """Implement state-specific scraping logic. Populate record fields."""
-        ...
+        pass
+
+    # ── Diagnostic Utility ────────────────────────────────────────────────────
+    
+    def run_diagnostic(self, callback) -> None:
+        """
+        Public method for diagnostic scripts to run custom code safely using 
+        the scraper's context, stealth, and pauses, without instantiating Playwright directly.
+        callback should accept a `page` parameter.
+        """
+        from flask import current_app
+        from playwright.sync_api import sync_playwright
+        from playwright_stealth import Stealth
+
+        use_stealth = current_app.config.get("USE_STEALTH_MODE", True)
+        pw_cm = Stealth().use_sync(sync_playwright()) if use_stealth else sync_playwright()
+
+        with pw_cm as pw:
+            browser = pw.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+            context = browser.new_context(
+                viewport={"width": 1920, "height": 1080},
+                device_scale_factor=2,
+                user_agent=self._ua(),
+            )
+            page = context.new_page()
+            page.set_default_timeout(self.timeout_ms)
+            try:
+                callback(page)
+            finally:
+                context.close()
+                browser.close()
+                
+        # Mandatory pause after diagnostic
+        delay = current_app.config.get("SCRAPER_DELAY_SECONDS", 4)
+        if delay > 0:
+            time.sleep(delay)
 
     # ── Shared helpers ────────────────────────────────────────────────────────
 

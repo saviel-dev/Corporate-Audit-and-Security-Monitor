@@ -1,0 +1,33 @@
+from playwright.sync_api import sync_playwright
+
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto("https://hbe.dcca.hawaii.gov/search-and-buy")
+        page.wait_for_timeout(4000)
+        
+        loc = page.get_by_placeholder("Enter a Business Name", exact=False)
+        if loc.count() > 0:
+            loc.first.fill("ALOHA")
+            btn = page.get_by_role("button", name="Search", exact=True)
+            if btn.count() > 0:
+                btn.first.click()
+            else:
+                page.keyboard.press("Enter")
+        else:
+            return
+            
+        page.wait_for_timeout(5000)
+        
+        links = page.locator("button.name-cell-btn")
+        if links.count() > 0:
+            links.first.click()
+            page.wait_for_timeout(5000)
+            with open("scratch/hi_detail.html", "w", encoding="utf-8") as f:
+                f.write(page.inner_html("body"))
+        
+        browser.close()
+
+if __name__ == "__main__":
+    run()

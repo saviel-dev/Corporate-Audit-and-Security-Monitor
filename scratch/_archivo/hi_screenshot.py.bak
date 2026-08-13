@@ -1,0 +1,27 @@
+from playwright.sync_api import sync_playwright
+
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        print("Goto page...")
+        page.goto("https://hbe.dcca.hawaii.gov/")
+        page.wait_for_timeout(5000)
+        page.screenshot(path="scratch/hi_page1.png", full_page=True)
+        
+        print("Finding search input...")
+        # LWC inputs often have placeholders
+        loc = page.locator("input[placeholder*='search' i], input[placeholder*='name' i], input[type='search'], input[type='text']")
+        if loc.count() > 0:
+            print("Found input, filling...")
+            loc.first.fill("ALOHA")
+            page.keyboard.press("Enter")
+        else:
+            print("No input found")
+            
+        page.wait_for_timeout(5000)
+        page.screenshot(path="scratch/hi_page2.png", full_page=True)
+        browser.close()
+
+if __name__ == "__main__":
+    run()

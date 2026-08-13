@@ -1,0 +1,24 @@
+import requests
+import asyncio
+
+print("=== CO: Búsqueda de IDs ===")
+co_ids = ["X9Z7Q4", "Z8R3T1", "R4S6V8", "PLK9M2", "HJ3K8L2"]
+for cid in co_ids:
+    url = f"https://data.colorado.gov/resource/4ykn-tg5h.json?entityid={cid}"
+    resp = requests.get(url)
+    if resp.status_code == 200:
+        data = resp.json()
+        print(f"ID {cid}: Encontrados {len(data)}")
+    else:
+        print(f"ID {cid}: Error {resp.status_code}")
+
+print("\n=== CO: Búsqueda de Nombres ===")
+co_names = ["Pioneer Energy Inc", "Rocky Mountain Foods Corp", "Summit Logistics Inc", "Continental Media Group", "Centennial Builders Inc"]
+for name in co_names:
+    url = f"https://data.colorado.gov/resource/4ykn-tg5h.json"
+    resp = requests.get(url, params={"$where": f"entityname like '{name.upper()}%'"})
+    if resp.status_code == 200:
+        data = resp.json()
+        print(f"Nombre '{name}': Encontrados {len(data)}")
+    else:
+        print(f"Nombre '{name}': Error {resp.status_code}")

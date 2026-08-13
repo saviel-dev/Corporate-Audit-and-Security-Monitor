@@ -1,0 +1,8 @@
+with open('app/routes.py', 'r', encoding='utf-8') as f:
+    text = f.read()
+    import re
+    match = re.search(r'(@main_bp\.route.*?def get_dashboard_stats)', text, re.DOTALL)
+    if match:
+        print(match.group(1))
+    else:
+        print("Not found")

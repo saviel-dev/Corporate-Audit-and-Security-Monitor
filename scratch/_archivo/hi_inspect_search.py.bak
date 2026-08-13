@@ -1,0 +1,47 @@
+from playwright.sync_api import sync_playwright
+
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto("https://hbe.dcca.hawaii.gov/search-and-buy")
+        page.wait_for_timeout(4000)
+        
+        # Take screenshot of search and buy page
+        page.screenshot(path="scratch/hi_search_page.png", full_page=True)
+        
+        print("Looking for input...")
+        loc = page.locator("input[type='search'], input[type='text'], input[placeholder*='search' i], input[placeholder*='name' i]")
+        if loc.count() > 0:
+            print(f"Found {loc.count()} inputs.")
+            for i in range(loc.count()):
+                try:
+                    el = loc.nth(i)
+                    print(f"Input {i}: placeholder='{el.get_attribute('placeholder')}', type='{el.get_attribute('type')}', id='{el.get_attribute('id')}'")
+                except:
+                    pass
+            loc.first.fill("ALOHA")
+            
+            print("Pressing Enter...")
+            page.keyboard.press("Enter")
+        else:
+            print("No input found")
+            return
+            
+        page.wait_for_timeout(5000)
+        
+        print("After search, looking for links in table/results...")
+        links = page.locator("a")
+        for i in range(links.count()):
+            text = links.nth(i).inner_text().strip()
+            if text and len(text) > 2 and "ALOHA" in text.upper():
+                print(f"Found result link: {text}")
+        
+        # Save html
+        with open("scratch/hi_search.html", "w", encoding="utf-8") as f:
+            f.write(page.inner_html("body"))
+            
+        browser.close()
+
+if __name__ == "__main__":
+    run()

@@ -28,11 +28,12 @@ Query strategy:
 
 from __future__ import annotations
 
+import json
 import logging
 import urllib.parse
 import urllib.request
-import json
 from datetime import datetime, timezone
+
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ SELECT_FIELDS = (
 DEFAULT_TERMS = [
     {"first": "Marcio", "last": "Garcia"},
     {"first": "Marcio", "last": "Andrade"},
-    {"first": "Marcio", "last": None},   # all Marcios (broader)
+    {"first": "Marcio", "last": None},  # all Marcios (broader)
 ]
 
 # Statuses to EXCLUDE (these are definitively inactive)
@@ -68,23 +69,29 @@ SKIP_STATUSES = {
 
 # ── Data container ────────────────────────────────────────────────────────────
 
+
 class COEntityRecord:
     """A business entity record from the Colorado Socrata API."""
 
     def __init__(self, row: dict):
-        self.entity_id    = row.get("entityid", "").strip()
-        self.entity_name  = row.get("entityname", "").strip()
+        self.entity_id = row.get("entityid", "").strip()
+        self.entity_name = row.get("entityname", "").strip()
         self.entity_status = row.get("entitystatus", "").strip()
-        self.form_date    = row.get("entityformdate", "")
-        self.agent_first  = row.get("agentfirstname", "").strip()
+        self.form_date = row.get("entityformdate", "")
+        self.agent_first = row.get("agentfirstname", "").strip()
         self.agent_middle = row.get("agentmiddlename", "").strip()
-        self.agent_last   = row.get("agentlastname", "").strip()
+        self.agent_last = row.get("agentlastname", "").strip()
         self.agent_suffix = row.get("agentsuffix", "").strip()
-        self.agent_org    = row.get("agentorganizationname", "").strip()
+        self.agent_org = row.get("agentorganizationname", "").strip()
 
     @property
     def agent_full_name(self) -> str:
-        parts = [self.agent_first, self.agent_middle, self.agent_last, self.agent_suffix]
+        parts = [
+            self.agent_first,
+            self.agent_middle,
+            self.agent_last,
+            self.agent_suffix,
+        ]
         return " ".join(p for p in parts if p).strip() or self.agent_org
 
     @property
@@ -97,17 +104,20 @@ class COEntityRecord:
         name = self.entity_name
         for marker in [", Dissolved", ", Delinquent", ", Revoked", ", Withdrawn"]:
             if marker in name:
-                name = name[:name.index(marker)]
+                name = name[: name.index(marker)]
         return name.strip()
 
     def __repr__(self):
-        return (f"<COEntity id={self.entity_id} "
-                f"name='{self.clean_entity_name}' "
-                f"status='{self.entity_status}' "
-                f"agent='{self.agent_full_name}'>")
+        return (
+            f"<COEntity id={self.entity_id} "
+            f"name='{self.clean_entity_name}' "
+            f"status='{self.entity_status}' "
+            f"agent='{self.agent_full_name}'>"
+        )
 
 
 # ── API client ────────────────────────────────────────────────────────────────
+
 
 def _socrata_query(params: dict, limit: int = 1000) -> list[dict]:
     """
@@ -127,7 +137,7 @@ def _socrata_query(params: dict, limit: int = 1000) -> list[dict]:
             headers={
                 "Accept": "application/json",
                 "User-Agent": "CorporateCashCreditMonitor/1.0",
-            }
+            },
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
@@ -160,7 +170,7 @@ def _soql_query(where_clause: str, limit: int = 1000) -> list[dict]:
             headers={
                 "Accept": "application/json",
                 "User-Agent": "CorporateCashCreditMonitor/1.0",
-            }
+            },
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
@@ -172,9 +182,13 @@ def _soql_query(where_clause: str, limit: int = 1000) -> list[dict]:
 
 # ── Discovery functions ───────────────────────────────────────────────────────
 
-def discover_by_agent_name(first: Optional[str], last: Optional[str],
-                           include_inactive: bool = False,
-                           limit: int = 500) -> list[COEntityRecord]:
+
+def discover_by_agent_name(
+    first: Optional[str],
+    last: Optional[str],
+    include_inactive: bool = False,
+    limit: int = 500,
+) -> list[COEntityRecord]:
     """
     Find all CO entities where agent first/last name matches.
 
@@ -200,13 +214,19 @@ def discover_by_agent_name(first: Optional[str], last: Optional[str],
     if not include_inactive:
         records = [r for r in records if r.is_active]
 
-    logger.info("[CO-API] '%s %s' → %d entities (%d total before filter)",
-                first or "*", last or "*", len(records), len(rows))
+    logger.info(
+        "[CO-API] '%s %s' → %d entities (%d total before filter)",
+        first or "*",
+        last or "*",
+        len(records),
+        len(rows),
+    )
     return records
 
 
-def discover_all_targets(terms: Optional[list[dict]] = None,
-                         include_inactive: bool = False) -> list[COEntityRecord]:
+def discover_all_targets(
+    terms: Optional[list[dict]] = None, include_inactive: bool = False
+) -> list[COEntityRecord]:
     """
     Run discovery for all configured search terms.
     Returns deduplicated list of COEntityRecord sorted by form_date.
@@ -221,7 +241,7 @@ def discover_all_targets(terms: Optional[list[dict]] = None,
 
     for term in terms:
         first = term.get("first")
-        last  = term.get("last")
+        last = term.get("last")
         logger.info("[CO-Discovery] Searching: first='%s' last='%s'", first, last)
 
         records = discover_by_agent_name(
@@ -235,10 +255,12 @@ def discover_all_targets(terms: Optional[list[dict]] = None,
                 all_records.append(rec)
 
     # Sort: active first, then by form date (oldest → newest)
-    all_records.sort(key=lambda r: (
-        0 if r.is_active else 1,
-        r.form_date or "9999",
-    ))
+    all_records.sort(
+        key=lambda r: (
+            0 if r.is_active else 1,
+            r.form_date or "9999",
+        )
+    )
 
     logger.info("[CO-Discovery] Total unique entities found: %d", len(all_records))
     return all_records
@@ -258,8 +280,10 @@ def lookup_by_name(entity_name: str, limit: int = 10) -> list[COEntityRecord]:
 
 # ── Integration helper for scanner.py ────────────────────────────────────────
 
-def run_co_discovery(discovery_terms: Optional[list[dict]] = None,
-                     include_inactive: bool = False) -> list[dict]:
+
+def run_co_discovery(
+    discovery_terms: Optional[list[dict]] = None, include_inactive: bool = False
+) -> list[dict]:
     """
     Entry point for the scanner.
     Returns list of dicts suitable for Corporation.upsert().
@@ -272,15 +296,21 @@ def run_co_discovery(discovery_terms: Optional[list[dict]] = None,
 
     results = []
     for rec in records:
-        results.append({
-            "name":            rec.clean_entity_name,
-            "state":           "CO",
-            "status":          "Disponible" if rec.is_active else "Vendida",
-            "source_file":     "co-socrata-api",
-            "corp_id":         rec.entity_id,
-            "agent_name":      rec.agent_full_name,
-            "agent_first":     rec.agent_first,
-            "agent_last":      rec.agent_last,
-        })
+        results.append(
+            {
+                "name": rec.clean_entity_name,
+                "state": "CO",
+                # Las corps de CO Discovery representan el estado en el registro estatal,
+                # no el inventario del cliente. "Available" = activa en el registro de CO.
+                "status": "Available" if rec.is_active else "Inactive",
+                "source_file": "co-socrata-api",
+                "corp_id": rec.entity_id,
+                "agent_name": rec.agent_full_name,
+                "agent_first": rec.agent_first,
+                "agent_last": rec.agent_last,
+                "estado_entidad_registro": rec.entity_status,
+                "fecha_ultima_verificacion_estado": datetime.now(timezone.utc),
+            }
+        )
 
     return results
