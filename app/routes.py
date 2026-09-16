@@ -187,7 +187,13 @@ def dashboard():
 
     # Recent alerts
     recent_alerts = (
-        ScanResult.query.filter_by(alert=True)
+        ScanResult.query
+        .filter(ScanResult.alert == True)
+        .filter(
+            # Excluir falsos positivos detectados automaticamente por el sistema
+            (ScanResult.alert_disposition != "FALSO_POSITIVO") |
+            (ScanResult.alert_disposition == None)
+        )
         .order_by(ScanResult.scanned_at.desc())
         .limit(10)
         .all()
@@ -233,6 +239,50 @@ def corporations_list():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+
+
+# ─── Review Workflow ──────────────────────────────────────────────────────────
+# POST /alertas/<id>/revisar — Clasificar alerta: robo real vs venta vs falso positivo
+
+@main_bp.route("/alertas/<int:result_id>/revisar", methods=["POST"])
+def revisar_alerta(result_id):
+    from datetime import datetime, timezone
+    disposition = request.form.get("disposition", "").strip().upper()
+    reviewer = request.form.get("reviewer", "Auditor").strip()
+    reason = request.form.get("reason", "").strip()
+
+    valid = {"ROBO_CONFIRMADO", "VENDIDA", "FALSO_POSITIVO", "PENDIENTE_REVISION"}
+    if disposition not in valid:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return {"error": f"Disposicion invalida: {disposition}"}, 400
+        return redirect(request.referrer or url_for("main.index"))
+
+    result = ScanResult.query.get_or_404(result_id)
+    result.alert_disposition = disposition
+    result.reviewed_by = reviewer or "Sistema"
+    result.reviewed_at = datetime.now(timezone.utc)
+
+    # Actualizar estado de la corporacion segun la clasificacion
+    corp = Corporation.query.get(result.corporation_id)
+    if corp:
+        corp.corp_status_override = disposition
+        corp.status_override_reason = reason or f"Clasificado como {disposition} por {reviewer}"
+        corp.status_override_at = datetime.now(timezone.utc)
+
+        # Actualizar el status principal automaticamente
+        if disposition == "VENDIDA":
+            corp.status = "Sold"
+        elif disposition == "ROBO_CONFIRMADO":
+            corp.status = "Stolen"
+        # FALSO_POSITIVO mantiene el status original sin cambios
+
+    db.session.commit()
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return {"ok": True, "disposition": disposition, "result_id": result_id}
+
+    return redirect(request.referrer or url_for("main.index"))
+
 # CSV Upload
 # ─────────────────────────────────────────────────────────────────────────────
 

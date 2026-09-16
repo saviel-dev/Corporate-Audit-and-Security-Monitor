@@ -1,7 +1,0 @@
-import json, urllib.request
-
-url = 'https://data.colorado.gov/resource/4ykn-tg5h.json?$limit=1'
-req = urllib.request.Request(url, headers={'Accept': 'application/json'})
-with urllib.request.urlopen(req) as resp:
-    data = json.loads(resp.read().decode('utf-8'))
-    print(json.dumps(data[0], indent=2))

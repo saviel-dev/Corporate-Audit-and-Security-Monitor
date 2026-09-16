@@ -23,6 +23,7 @@ Then:
 from __future__ import annotations
 
 import json
+import re
 import logging
 import threading
 from datetime import datetime, timezone, timedelta
@@ -367,11 +368,21 @@ def _execute_scan(run_id: int, app) -> None:
             reason = f"NO VERIFICABLE: {scraped.error_message}"
         else:
             metrics.total_extraidas += 1
-            # Detect potential theft only if successfully extracted
-            is_theft, reason = is_potential_theft(
-                scraped.officer_name,
-                scraped.registered_agent,
-            )
+            # Si la corporacion ya fue clasificada como venta o falso positivo, no alertar
+            corp_override = getattr(corp, 'corp_status_override', None)
+            if corp_override in ('VENDIDA', 'FALSO_POSITIVO'):
+                logger.info(
+                    "[%s] Alerta suprimida para '%s' — clasificada previamente como %s.",
+                    corp.state, corp.name, corp_override
+                )
+                is_theft = False
+                reason = ""
+            else:
+                # Detect potential theft only if successfully extracted
+                is_theft, reason = is_potential_theft(
+                    scraped.officer_name,
+                    scraped.registered_agent,
+                )
             
             is_vulnerable = False
             # Check high priority alert status
@@ -410,6 +421,21 @@ def _execute_scan(run_id: int, app) -> None:
                 pass
 
         # Save result
+        # Auto-determinar disposicion de la alerta
+        auto_disposition = None
+        if is_theft:
+            _SUFIJO_PATRON = re.compile(
+                r",\s*(Delinquent|Noncompliant|Good Standing|Dissolved)",
+                re.IGNORECASE,
+            )
+            # Si el reason solo muestra cambio por sufijo del portal → falso positivo automatico
+            if _SUFIJO_PATRON.search(reason or ""):
+                # El nombre cambio solo por el sufijo de estado del portal
+                auto_disposition = "FALSO_POSITIVO"
+                is_theft = False  # No es un robo real
+            else:
+                auto_disposition = "PENDIENTE_REVISION"
+
         result = ScanResult(
             daily_run_id=run_id,
             corporation_id=corp.id,
@@ -423,6 +449,7 @@ def _execute_scan(run_id: int, app) -> None:
             pdf_path=scraped.pdf_path,
             error=scraped.error,
             error_message=scraped.error_message,
+            alert_disposition=auto_disposition,
         )
         db.session.add(result)
 

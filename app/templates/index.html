@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard — Corporate Monitor{% endblock %}
+{% block title %}Dashboard — Corporate Monitor
+
+{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
@@ -206,21 +208,63 @@
   <div class="alert-list" id="alert-list">
     {% if recent_alerts %}
       {% for result in recent_alerts %}
-      <div class="alert-item">
-        <div class="alert-item-icon"><i data-lucide="alert-triangle"></i></div>
-        <div class="alert-item-body">
-          <div class="alert-item-corp">{{ result.corporation.name }}</div>
+      <div class="alert-item" id="alert-{{ result.id }}" style="flex-wrap: wrap; gap: 0.5rem;">
+        <div class="alert-item-icon">
+          {% if result.alert_disposition == 'ROBO_CONFIRMADO' %}
+            <i data-lucide="shield-x" style="color: var(--color-danger);"></i>
+          {% elif result.alert_disposition == 'VENDIDA' %}
+            <i data-lucide="handshake" style="color: #60a5fa;"></i>
+          {% elif result.alert_disposition == 'FALSO_POSITIVO' %}
+            <i data-lucide="check-circle" style="color: var(--color-success);"></i>
+          {% else %}
+            <i data-lucide="alert-triangle"></i>
+          {% endif %}
+        </div>
+        <div class="alert-item-body" style="flex: 1;">
+          <div class="alert-item-corp">{{ result.corporation.name }}
+            {% if result.alert_disposition and result.alert_disposition != 'PENDIENTE_REVISION' %}
+              <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; margin-left: 8px;
+                background: {% if result.alert_disposition == 'ROBO_CONFIRMADO' %}rgba(239,68,68,0.2); color: #f87171;
+                {% elif result.alert_disposition == 'VENDIDA' %}rgba(96,165,250,0.2); color: #60a5fa;
+                {% else %}rgba(34,197,94,0.2); color: #4ade80;{% endif %}">
+                {{ result.alert_disposition.replace('_', ' ') }}
+              </span>
+            {% elif result.alert_disposition == 'PENDIENTE_REVISION' %}
+              <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; margin-left: 8px; background: rgba(251,191,36,0.15); color: #fbbf24;">
+                PENDIENTE REVISIÓN
+              </span>
+            {% endif %}
+          </div>
           <div class="alert-item-reason">{{ result.alert_reason or 'Sin descripción' }}</div>
           <div class="alert-item-meta">
             <span class="state-badge state-badge--{{ result.corporation.state|lower }}">{{ result.corporation.state }}</span>
             {{ result.scanned_at.strftime('%d/%m/%Y %H:%M') }}
+            {% if result.reviewed_by %}
+              · Revisado por <strong>{{ result.reviewed_by }}</strong>
+            {% endif %}
           </div>
         </div>
-        {% if result.pdf_path %}
-        <a href="{{ url_for('main.download_output', filename=result.pdf_path) }}" class="alert-item-pdf" target="_blank" title="Ver captura original">
-          <i data-lucide="image"></i> Ver Captura
-        </a>
-        {% endif %}
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          {% if result.pdf_path %}
+          <a href="{{ url_for('main.download_output', filename=result.pdf_path) }}" class="alert-item-pdf" target="_blank" title="Ver captura original">
+            <i data-lucide="image"></i> Ver Captura
+          </a>
+          {% endif %}
+          {% if not result.alert_disposition or result.alert_disposition == 'PENDIENTE_REVISION' %}
+          <button onclick="clasificarAlerta({{ result.id }}, 'ROBO_CONFIRMADO')" title="Confirmar como robo real"
+            style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 6px; border: none; background: #ef4444; color: white; cursor: pointer; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+            <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i> Robada
+          </button>
+          <button onclick="clasificarAlerta({{ result.id }}, 'VENDIDA')" title="Marcar como venta legítima"
+            style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 6px; border: none; background: #3b82f6; color: white; cursor: pointer; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+            <i data-lucide="handshake" style="width: 14px; height: 14px;"></i> Vendida
+          </button>
+          <button onclick="clasificarAlerta({{ result.id }}, 'FALSO_POSITIVO')" title="Descartar alerta (todo en orden)"
+            style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 6px; border: none; background: #10b981; color: white; cursor: pointer; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i> Todo en Orden
+          </button>
+          {% endif %}
+        </div>
       </div>
       {% endfor %}
     {% else %}
@@ -232,5 +276,42 @@
     {% endif %}
   </div>
 </section>
+
+
+<script>
+// Ocultar alertas que ya fueron clasificadas localmente al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.alert-item').forEach(el => {
+    const idMatch = el.id.match(/^alert-(\d+)$/);
+    if (idMatch) {
+      const resultId = idMatch[1];
+      if (localStorage.getItem('local_alert_status_' + resultId)) {
+        el.style.display = 'none';
+      }
+    }
+  });
+});
+
+function clasificarAlerta(resultId, disposition) {
+  const labels = {
+    'ROBO_CONFIRMADO': 'Robo Confirmado',
+    'VENDIDA': 'Venta Legítima',
+    'FALSO_POSITIVO': 'Falso Positivo',
+    'FALSO_POSITIVO': 'Todo en Orden' // Actualizado nombre
+  };
+  if (!confirm(`¿Clasificar esta alerta como "${labels[disposition] || disposition}"?`)) return;
+
+  // Solo almacenamiento interno (localStorage)
+  localStorage.setItem('local_alert_status_' + resultId, disposition);
+  
+  // Ocultar de la interfaz inmediatamente
+  const el = document.getElementById('alert-' + resultId);
+  if (el) {
+    el.style.transition = 'opacity 0.3s ease';
+    el.style.opacity = '0';
+    setTimeout(() => { el.style.display = 'none'; }, 300);
+  }
+}
+</script>
 
 {% endblock %}

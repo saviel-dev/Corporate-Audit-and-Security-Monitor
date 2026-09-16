@@ -154,6 +154,12 @@ class Corporation(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    # Override de estado para corporaciones vendidas
+    corp_status_override = db.Column(db.String(64), nullable=True)
+    # VENDIDA | FALSO_POSITIVO | None
+    status_override_reason = db.Column(db.Text, nullable=True)
+    status_override_at = db.Column(db.DateTime, nullable=True)
+
     scan_results = db.relationship(
         "ScanResult", back_populates="corporation", cascade="all, delete-orphan"
     )
@@ -293,6 +299,15 @@ class ScanResult(db.Model):
     error_message = db.Column(db.Text, nullable=True)
 
     notes = db.Column(db.Text, nullable=True)
+
+    # Review workflow (distinguir robo vs venta legitima)
+    alert_disposition = db.Column(
+        db.String(32),
+        nullable=True,
+        default="PENDIENTE_REVISION",
+    )  # PENDIENTE_REVISION | ROBO_CONFIRMADO | VENDIDA | FALSO_POSITIVO
+    reviewed_by = db.Column(db.String(128), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
 
     daily_run = db.relationship("DailyRun", back_populates="scan_results")
     corporation = db.relationship("Corporation", back_populates="scan_results")

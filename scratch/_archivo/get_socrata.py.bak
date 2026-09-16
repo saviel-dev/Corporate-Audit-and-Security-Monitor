@@ -1,5 +1,0 @@
-import requests
-import json
-url = "https://data.colorado.gov/resource/4ykn-tg5h.json"
-resp = requests.get(url, params={"$limit": 1})
-print(json.dumps(resp.json()[0], indent=2))

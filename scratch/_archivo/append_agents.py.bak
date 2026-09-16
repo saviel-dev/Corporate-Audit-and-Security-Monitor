@@ -1,7 +1,0 @@
-with open('scratch/agentes_crudos.txt', 'a', encoding='utf-8') as f:
-    f.write('CO | Marcio Caetano\n')
-    f.write('CO | Marcio Andrade\n')
-    f.write('CO | Marcio Teixeira Dias\n')
-    f.write('CO | Marcio Garcia Andrade\n')
-    f.write('CO | Marcio Garcia\n')
-    f.write('CO | Marcio Andrade\n')

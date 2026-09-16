@@ -1,4 +1,0 @@
-import sqlite3
-c = sqlite3.connect('instance/monitor.db').cursor()
-c.execute("SELECT estado, total_intentadas, total_extraidas, tasa_exito FROM state_metrics WHERE daily_run_id=29;")
-print(c.fetchall())
