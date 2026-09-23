@@ -45,8 +45,18 @@ def send_daily_summary(run_id: int, flagged_results: list) -> bool:
         logger.error("No Flask app context for mailer.")
         return False
 
-    recipients = cfg.get("MAIL_RECIPIENTS", [])
-    if not recipients or recipients == [""]:
+    # Fetch from SystemSettings
+    from app.models import SystemSettings
+    settings = SystemSettings.query.first()
+    
+    recipients_str = settings.notification_emails if settings and settings.notification_emails else cfg.get("MAIL_RECIPIENTS", "")
+    
+    if isinstance(recipients_str, list):
+        recipients = recipients_str
+    else:
+        recipients = [r.strip() for r in recipients_str.split(",") if r.strip()]
+
+    if not recipients:
         logger.info("No MAIL_RECIPIENTS configured — skipping email.")
         return False
 

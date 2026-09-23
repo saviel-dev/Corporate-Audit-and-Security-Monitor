@@ -18,6 +18,7 @@ import csv
 import os
 from datetime import datetime, timezone
 
+from werkzeug.security import check_password_hash, generate_password_hash
 from flask import (Blueprint, current_app, flash, jsonify, make_response,
                    redirect, render_template, request, send_from_directory,
                    session, url_for)
@@ -25,7 +26,7 @@ from flask_babel import gettext as _
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.models import (ABBR_STATE, STATE_ABBR, Corporation, DailyRun,
+from app.models import (SystemSettings, ABBR_STATE, STATE_ABBR, Corporation, DailyRun,
                         ScanResult, StateConfig)
 
 main_bp = Blueprint("main", __name__)
@@ -75,9 +76,8 @@ def login():
             username = data.get("username", "").strip()
             password = data.get("password", "")
 
-            if username == "admin" and password == current_app.config.get(
-                "ADMIN_PASSWORD", "admin123"
-            ):
+            settings = SystemSettings.query.first()
+            if settings and username == settings.admin_username and check_password_hash(settings.admin_password_hash, password):
                 session.permanent = True
                 session["logged_in"] = True
                 return jsonify({"success": True})
@@ -96,9 +96,8 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
-        if username == "admin" and password == current_app.config.get(
-            "ADMIN_PASSWORD", "admin123"
-        ):
+        settings = SystemSettings.query.first()
+        if settings and username == settings.admin_username and check_password_hash(settings.admin_password_hash, password):
             session.permanent = True
             session["logged_in"] = True
             flash(_("Sesión iniciada correctamente."), "success")
@@ -163,7 +162,7 @@ def dashboard():
     low_success_states = []
     excluded_breakdown = {}
     
-    from app.models import StateConfig
+    from app.models import SystemSettings, StateConfig
     state_configs = StateConfig.query.all()
     
     if last_run:
@@ -965,3 +964,40 @@ def download_output(filename):
     return send_from_directory(
         current_app.config["OUTPUT_FOLDER"], filename, as_attachment=True
     )
+
+@main_bp.route("/ajustes", methods=["GET", "POST"])
+def ajustes():
+    if not session.get("logged_in"):
+        return redirect(url_for("main.login"))
+        
+    settings = SystemSettings.query.first()
+    if not settings:
+        # Fallback if somehow not initialized
+        settings = SystemSettings(admin_username="admin", admin_password_hash=generate_password_hash("admin123"))
+        db.session.add(settings)
+        db.session.commit()
+        
+    if request.method == "POST":
+        new_username = request.form.get("admin_username", "").strip()
+        new_password = request.form.get("new_password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+        new_email = request.form.get("notification_emails", "").strip()
+        
+        # Validate password match
+        if new_password and new_password != confirm_password:
+            flash("Las contrasenas no coinciden. Por favor verifica.", "error")
+            return render_template("ajustes.html", settings=settings)
+        
+        if new_username:
+            settings.admin_username = new_username
+            # Update session username
+            session["username"] = new_username
+        if new_password:
+            settings.admin_password_hash = generate_password_hash(new_password)
+        settings.notification_emails = new_email
+            
+        db.session.commit()
+        flash("Configuraciones guardadas correctamente.", "success")
+        return redirect(url_for("main.ajustes"))
+        
+    return render_template("ajustes.html", settings=settings)

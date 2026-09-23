@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
   <!-- UI Ball Loaders -->
   <script type="module" defer src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/bouncy.js"></script>
-  
+
   <!-- Socket.IO -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  
+
   {% block head %}{% endblock %}
   <script>
     if (localStorage.getItem('theme') === 'light') {
@@ -41,25 +41,34 @@
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 0;">
-      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Corporate Cash Credit" style="width: 45px; height: 45px; object-fit: contain;" class="logo-image" />
+    <div class="sidebar-logo"
+      style="position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 0;">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Corporate Cash Credit"
+        style="width: 45px; height: 45px; object-fit: contain;" class="logo-image" />
       <div class="logo-text" style="display: flex; flex-direction: column;">
-        <span class="logo-title" style="color: #4065d4; font-weight: 800; font-size: 1.15rem; line-height: 1.2; letter-spacing: -0.3px;">Corp Monitor</span>
+        <span class="logo-title"
+          style="color: #4065d4; font-weight: 800; font-size: 1.15rem; line-height: 1.2; letter-spacing: -0.3px;">Corp
+          Monitor</span>
         <span class="logo-subtitle" style="color: #567ffb; font-size: 0.8rem; font-weight: 600;">Cash Credit</span>
       </div>
-      <button id="sidebar-collapse-btn" aria-label="Colapsar sidebar" style="position: absolute; right: -12px; top: 24px; width: 24px; height: 24px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 50%; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; z-index: 110; transition: all var(--duration);" onmouseover="this.style.borderColor='var(--brand)'; this.style.color='var(--brand)';" onmouseout="this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)';">
+      <button id="sidebar-collapse-btn" aria-label="Colapsar sidebar"
+        style="position: absolute; right: -12px; top: 24px; width: 24px; height: 24px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 50%; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; z-index: 110; transition: all var(--duration);"
+        onmouseover="this.style.borderColor='var(--brand)'; this.style.color='var(--brand)';"
+        onmouseout="this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)';">
         <i data-lucide="menu" id="collapse-icon" style="width: 14px; height: 14px;"></i>
       </button>
     </div>
 
     <nav class="sidebar-nav">
       <a href="{{ url_for('main.dashboard') }}"
-        class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}" id="nav-dashboard" data-tooltip="{{ _('Dashboard') }}">
+        class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}" id="nav-dashboard"
+        data-tooltip="{{ _('Dashboard') }}">
         <i data-lucide="layout-dashboard"></i>
         <span>{{ _('Dashboard') }}</span>
       </a>
       <a href="{{ url_for('main.corporations_list') }}"
-        class="nav-item {% if request.endpoint == 'main.corporations_list' %}active{% endif %}" id="nav-corporations" data-tooltip="{{ _('Corporaciones') }}">
+        class="nav-item {% if request.endpoint == 'main.corporations_list' %}active{% endif %}" id="nav-corporations"
+        data-tooltip="{{ _('Corporaciones') }}">
         <i data-lucide="list"></i>
         <span>{{ _('Corporaciones') }}</span>
       </a>
@@ -76,8 +85,8 @@
         <span>{{ _('Ejecuciones') }}</span>
       </a>
       <a href="{{ url_for('main.reports') }}"
-        class="nav-item {% if request.endpoint == 'main.reports' %}active{% endif %}"
-        id="nav-reports" data-tooltip="{{ _('Reportes') }}">
+        class="nav-item {% if request.endpoint == 'main.reports' %}active{% endif %}" id="nav-reports"
+        data-tooltip="{{ _('Reportes') }}">
         <i data-lucide="bar-chart-3"></i>
         <span>{{ _('Reportes') }}</span>
       </a>
@@ -89,10 +98,12 @@
       </a>
       <div class="nav-divider"></div>
       <div class="nav-label">{{ _('Configuración') }}</div>
-      <a href="#" class="nav-item disabled" id="nav-settings" data-tooltip="{{ _('Ajustes') }}">
+      <a href="{{ url_for('main.ajustes') }}"
+        class="nav-item {% if request.endpoint == 'main.ajustes' %}active{% endif %}" id="nav-settings"
+        data-tooltip="{{ _('Ajustes') }}">
         <i data-lucide="settings"></i>
         <span>{{ _('Ajustes') }}</span>
-        <span class="nav-badge">{{ _('Próximo') }}</span>
+
       </a>
     </nav>
 
@@ -115,13 +126,16 @@
         </button>
       </form>
       <form action="#" method="post" style="width:100%; display:none; margin-top:0.5rem;" id="form-resume-scan">
-        <button type="submit" class="btn-scan" id="btn-resume-scan" data-tooltip="{{ _('Reanudar Escaneo') }}" style="background-color: var(--color-warning); color: #000; border-color: var(--color-warning);">
+        <button type="submit" class="btn-scan" id="btn-resume-scan" data-tooltip="{{ _('Reanudar Escaneo') }}"
+          style="background-color: var(--color-warning); color: #000; border-color: var(--color-warning);">
           <i data-lucide="fast-forward"></i>
           {{ _('Reanudar Escaneo') }}
         </button>
       </form>
-      <form action="{{ url_for('main.manual_cancel') }}" method="post" style="width:100%; display:none;" id="form-cancel-scan">
-        <button type="submit" class="btn-scan" id="btn-cancel-scan" data-tooltip="{{ _('Detener Escaneo') }}" style="background-color: var(--color-danger); color: white; border-color: var(--color-danger);">
+      <form action="{{ url_for('main.manual_cancel') }}" method="post" style="width:100%; display:none;"
+        id="form-cancel-scan">
+        <button type="submit" class="btn-scan" id="btn-cancel-scan" data-tooltip="{{ _('Detener Escaneo') }}"
+          style="background-color: var(--color-danger); color: white; border-color: var(--color-danger);">
           <i data-lucide="stop-circle"></i>
           {{ _('Detener Escaneo') }}
         </button>
@@ -137,59 +151,71 @@
       </button>
       <div class="topbar-left" style="display: flex; align-items: center; gap: 15px;">
         <div class="topbar-title-wrapper" style="display: flex; align-items: center; gap: 8px;">
-          <span class="topbar-icon" style="display: flex; align-items: center; justify-content: center; color: var(--brand);">
+          <span class="topbar-icon"
+            style="display: flex; align-items: center; justify-content: center; color: var(--brand);">
             {% block page_icon %}<i data-lucide="layout-dashboard" style="width: 20px; height: 20px;"></i>{% endblock %}
           </span>
           <div class="topbar-title" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">
             {% block page_title %}Dashboard{% endblock %}
           </div>
         </div>
-        
+
         <div class="topbar-divider" style="width: 1px; height: 28px; background: var(--border-default);"></div>
-        
+
         <div class="topbar-datetime" style="display: flex; flex-direction: column; line-height: 1.2;">
-          <span id="topbar-time" style="font-size: 0.95rem; font-weight: 700; color: var(--brand); letter-spacing: 0.5px;">--:--:--</span>
-          <span id="topbar-date" style="font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px;">---, -- ---</span>
+          <span id="topbar-time"
+            style="font-size: 0.95rem; font-weight: 700; color: var(--brand); letter-spacing: 0.5px;">--:--:--</span>
+          <span id="topbar-date"
+            style="font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px;">---,
+            -- ---</span>
         </div>
       </div>
       <div class="topbar-right">
         {% set current_lang = request.cookies.get('lang', 'es') %}
         {% if current_lang == 'es' %}
-          <a href="{{ url_for('main.set_language', lang='en') }}"
-             id="btn-lang-toggle"
-             aria-label="Switch to English"
-             title="Switch to English"
-             style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; transition: all var(--duration); text-decoration: none;"
-             onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
-             onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'">
-            <span style="font-size: 1.1rem; line-height:1;">🇺🇸</span>
-            <span>EN</span>
-          </a>
+        <a href="{{ url_for('main.set_language', lang='en') }}" id="btn-lang-toggle" aria-label="Switch to English"
+          title="Switch to English"
+          style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; transition: all var(--duration); text-decoration: none;"
+          onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
+          onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'">
+          <span style="font-size: 1.1rem; line-height:1;">🇺🇸</span>
+          <span>EN</span>
+        </a>
         {% else %}
-          <a href="{{ url_for('main.set_language', lang='es') }}"
-             id="btn-lang-toggle"
-             aria-label="Cambiar a Español"
-             title="Cambiar a Español"
-             style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; transition: all var(--duration); text-decoration: none;"
-             onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
-             onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'">
-            <span style="font-size: 1.1rem; line-height:1;">🇪🇸</span>
-            <span>ES</span>
-          </a>
+        <a href="{{ url_for('main.set_language', lang='es') }}" id="btn-lang-toggle" aria-label="Cambiar a Español"
+          title="Cambiar a Español"
+          style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; transition: all var(--duration); text-decoration: none;"
+          onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
+          onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'">
+          <span style="font-size: 1.1rem; line-height:1;">🇪🇸</span>
+          <span>ES</span>
+        </a>
         {% endif %}
 
-        {% if request.endpoint in ['main.dashboard', 'main.corporations_list', 'main.upload_form', 'main.runs_list', 'main.run_detail', 'main.states_list', 'main.reports'] %}
-        <button id="btn-tour" aria-label="{{ _('Iniciar Tour') }}" style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: 20px; transition: all var(--duration);" onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'" onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'" title="{{ _('Ver Tour Guía') }}">
+        {% if request.endpoint in ['main.dashboard', 'main.corporations_list', 'main.upload_form', 'main.runs_list',
+        'main.run_detail', 'main.states_list', 'main.reports'] %}
+        <button id="btn-tour" aria-label="{{ _('Iniciar Tour') }}"
+          style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: 20px; transition: all var(--duration);"
+          onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
+          onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'"
+          title="{{ _('Ver Tour Guía') }}">
           <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
           <span>{{ _('¿Cómo funciona?') }}</span>
         </button>
         {% endif %}
-        <button id="theme-toggle" aria-label="{{ _('Cambiar tema') }}" style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: 20px; transition: all var(--duration);" onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'" onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'" title="{{ _('Cambiar Tema') }}">
+        <button id="theme-toggle" aria-label="{{ _('Cambiar tema') }}"
+          style="background: none; border: 1px solid var(--border-default); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: 20px; transition: all var(--duration);"
+          onmouseover="this.style.background='var(--bg-elevated)'; this.style.borderColor='var(--brand)'; this.style.color='var(--brand)'"
+          onmouseout="this.style.background='none'; this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'"
+          title="{{ _('Cambiar Tema') }}">
           <i data-lucide="sun" id="theme-icon-light" style="display: none; width: 16px; height: 16px;"></i>
           <i data-lucide="moon" id="theme-icon-dark" style="width: 16px; height: 16px;"></i>
-          <span id="theme-text" data-light-text="{{ _('Modo Oscuro') }}" data-dark-text="{{ _('Modo Claro') }}">{{ _('Modo Claro') }}</span>
+          <span id="theme-text" data-light-text="{{ _('Modo Oscuro') }}" data-dark-text="{{ _('Modo Claro') }}">{{
+            _('Modo Claro') }}</span>
         </button>
-        <a href="{{ url_for('main.logout') }}" aria-label="{{ _('Cerrar Sesión') }}" style="background: none; border: none; cursor: pointer; color: var(--color-danger); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; padding: 6px 10px; border-radius: var(--radius-md); transition: background var(--duration);" onmouseover="this.style.background='var(--color-danger-bg)'" onmouseout="this.style.background='transparent'">
+        <a href="{{ url_for('main.logout') }}" aria-label="{{ _('Cerrar Sesión') }}"
+          style="background: none; border: none; cursor: pointer; color: var(--color-danger); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; padding: 6px 10px; border-radius: var(--radius-md); transition: background var(--duration);"
+          onmouseover="this.style.background='var(--color-danger-bg)'" onmouseout="this.style.background='transparent'">
           <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
           <span>{{ _('Salir') }}</span>
         </a>

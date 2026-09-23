@@ -1,0 +1,280 @@
+﻿{% extends "base.html" %}
+
+{% block title %}{{ _('Ajustes') }} — Corporate Monitor{% endblock %}
+{% block page_title %}{{ _('Ajustes del Sistema') }}{% endblock %}
+{% block page_icon %}<i data-lucide="settings" style="width: 20px; height: 20px;"></i>{% endblock %}
+
+{% block content %}
+
+<style>
+  /* ── shadcn/ui-style input system ── */
+  .sh-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.01em;
+  }
+  .sh-input-wrap {
+    position: relative;
+  }
+  .sh-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 2.4rem;
+    padding: 0 0.75rem;
+    border-radius: 6px;
+    border: 1px solid hsl(240 3.7% 25%);
+    background: hsl(240 3.7% 10%);
+    color: hsl(0 0% 95%);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+  }
+  .sh-input::placeholder {
+    color: hsl(240 3.7% 45%);
+  }
+  .sh-input:focus {
+    border-color: hsl(217 91% 60%);
+    box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.18);
+  }
+  .sh-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  /* Trailing icon (toggle password) */
+  .sh-input--icon-right {
+    padding-right: 2.5rem;
+  }
+  .sh-input-icon-btn {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: hsl(240 3.7% 45%);
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+  }
+  .sh-input-icon-btn:hover { color: hsl(0 0% 90%); }
+
+  /* ── Cards ── */
+  .sh-card {
+    background: hsl(240 3.7% 11%);
+    border: 1px solid hsl(240 3.7% 20%);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+  .sh-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: hsl(0 0% 96%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.35rem;
+  }
+  .sh-card-desc {
+    font-size: 0.8rem;
+    color: hsl(240 3.7% 50%);
+    line-height: 1.55;
+    margin: 0 0 1.25rem;
+  }
+  .sh-divider {
+    border: none;
+    border-top: 1px solid hsl(240 3.7% 20%);
+    margin: 1.25rem 0;
+  }
+  .sh-form-group { display: flex; flex-direction: column; gap: 0; margin-bottom: 1rem; }
+  .sh-form-group:last-child { margin-bottom: 0; }
+
+  /* ── Match hint ── */
+  .sh-hint {
+    font-size: 0.75rem;
+    margin-top: 0.3rem;
+    display: none;
+  }
+
+  /* ── Flash ── */
+  .sh-flash {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+  }
+  .sh-flash--success {
+    background: hsl(142 71% 45% / 0.12);
+    border: 1px solid hsl(142 71% 45% / 0.3);
+    color: hsl(142 71% 55%);
+  }
+  .sh-flash--error {
+    background: hsl(0 84% 60% / 0.12);
+    border: 1px solid hsl(0 84% 60% / 0.3);
+    color: hsl(0 84% 65%);
+  }
+</style>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="sh-flash sh-flash--{{ 'success' if category == 'success' else 'error' }}">
+        <i data-lucide="{{ 'check-circle' if category == 'success' else 'alert-circle' }}" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<form method="POST" action="{{ url_for('main.ajustes') }}" id="settings-form">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; max-width: 860px;">
+
+    <!-- ── Card: Notificaciones ── -->
+    <div class="sh-card" id="card-notifications">
+      <h2 class="sh-card-title">
+        <i data-lucide="bell" style="width: 16px; height: 16px; color: hsl(38 92% 55%);"></i>
+        Notificaciones
+      </h2>
+      <p class="sh-card-desc">Correo(s) donde llegarán las alertas automáticas al detectar cambios. Separa varios correos con coma.</p>
+      <hr class="sh-divider">
+
+      <div class="sh-form-group">
+        <label class="sh-label" for="notification_emails">Correo de notificaciones</label>
+        <div class="sh-input-wrap">
+          <input
+            class="sh-input"
+            type="text"
+            id="notification_emails"
+            name="notification_emails"
+            value="{{ settings.notification_emails or '' }}"
+            placeholder="correo@empresa.com, auditor@empresa.com"
+            autocomplete="off"
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card: Credenciales ── -->
+    <div class="sh-card" id="card-credentials">
+      <h2 class="sh-card-title">
+        <i data-lucide="lock" style="width: 16px; height: 16px; color: hsl(217 91% 60%);"></i>
+        Credenciales de Acceso
+      </h2>
+      <p class="sh-card-desc">Actualiza el usuario o contraseña para ingresar al sistema. Deja la contraseña en blanco si no deseas cambiarla.</p>
+      <hr class="sh-divider">
+
+      <div class="sh-form-group">
+        <label class="sh-label" for="admin_username">Usuario</label>
+        <div class="sh-input-wrap">
+          <input
+            class="sh-input"
+            type="text"
+            id="admin_username"
+            name="admin_username"
+            value="{{ settings.admin_username }}"
+            required
+            autocomplete="username"
+          >
+        </div>
+      </div>
+
+      <div class="sh-form-group">
+        <label class="sh-label" for="new_password">Nueva contraseña</label>
+        <div class="sh-input-wrap">
+          <input
+            class="sh-input sh-input--icon-right"
+            type="password"
+            id="new_password"
+            name="new_password"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          >
+          <button type="button" class="sh-input-icon-btn" id="toggle-password" title="Mostrar / ocultar" onclick="togglePass()">
+            <i data-lucide="eye" id="eye-icon" style="width: 15px; height: 15px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="sh-form-group">
+        <label class="sh-label" for="confirm_password">Confirmar contraseña</label>
+        <div class="sh-input-wrap">
+          <input
+            class="sh-input sh-input--icon-right"
+            type="password"
+            id="confirm_password"
+            name="confirm_password"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          >
+          <button type="button" class="sh-input-icon-btn" title="Mostrar / ocultar" onclick="toggleConfirm()">
+            <i data-lucide="eye" id="eye-icon-confirm" style="width: 15px; height: 15px;"></i>
+          </button>
+        </div>
+        <span id="pwd-match-msg" class="sh-hint"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Save button ── -->
+  <div style="margin-top: 1.5rem; max-width: 860px; display: flex; justify-content: flex-end;">
+    <button type="submit" class="btn btn-primary" id="btn-save-settings"
+      style="height: 2.4rem; padding: 0 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; border-radius: 6px;">
+      <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+      Guardar Cambios
+    </button>
+  </div>
+</form>
+
+<script>
+function togglePass() {
+  const inp = document.getElementById('new_password');
+  const ico = document.getElementById('eye-icon');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  ico.setAttribute('data-lucide', inp.type === 'password' ? 'eye' : 'eye-off');
+  lucide.createIcons();
+}
+function toggleConfirm() {
+  const inp = document.getElementById('confirm_password');
+  const ico = document.getElementById('eye-icon-confirm');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  ico.setAttribute('data-lucide', inp.type === 'password' ? 'eye' : 'eye-off');
+  lucide.createIcons();
+}
+
+const newPwd     = document.getElementById('new_password');
+const confirmPwd = document.getElementById('confirm_password');
+const matchMsg   = document.getElementById('pwd-match-msg');
+
+function checkMatch() {
+  if (!confirmPwd.value) { matchMsg.style.display = 'none'; return; }
+  const ok = newPwd.value === confirmPwd.value;
+  matchMsg.textContent = ok ? 'Las contraseñas coinciden ✓' : 'Las contraseñas no coinciden';
+  matchMsg.style.color = ok ? 'hsl(142 71% 55%)' : 'hsl(0 84% 65%)';
+  matchMsg.style.display = 'block';
+}
+confirmPwd.addEventListener('input', checkMatch);
+newPwd.addEventListener('input', checkMatch);
+
+document.getElementById('settings-form').addEventListener('submit', function(e) {
+  if (newPwd.value && newPwd.value !== confirmPwd.value) {
+    e.preventDefault();
+    matchMsg.textContent = 'Las contraseñas no coinciden. Por favor verifica.';
+    matchMsg.style.color = 'hsl(0 84% 65%)';
+    matchMsg.style.display = 'block';
+    confirmPwd.focus();
+  }
+});
+</script>
+
+{% endblock %}

@@ -317,3 +317,18 @@ class ScanResult(db.Model):
         return (
             f"<ScanResult [{flag}] corp={self.corporation_id} run={self.daily_run_id}>"
         )
+
+
+class SystemSettings(db.Model):
+    __tablename__ = "system_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    admin_username = db.Column(db.String(64), default="admin", nullable=False)
+    admin_password_hash = db.Column(db.String(256), nullable=False)
+    notification_emails = db.Column(db.String(512), nullable=True)
+
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
